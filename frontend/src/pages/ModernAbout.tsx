@@ -145,7 +145,7 @@ const ModernAbout = () => {
                 </span>
               </h1>
               <p className="text-lg text-gray-600 mb-6 max-w-2xl mx-auto">
-                For over 15 years, we've been creating accessible environments with premium acrylic braille signage that exceeds ADA requirements.
+                For over 15 years, we've been creating accessible environments with premium acrylic braille signage that exceeds ADA requirements. Serving Canada & USA with professional installation and support.
               </p>
             </div>
           </div>
