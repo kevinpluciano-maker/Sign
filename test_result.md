@@ -282,12 +282,17 @@
 
 ## test_plan:
   current_focus:
-    - "Cart/Add-to-cart functionality testing"
-    - "Wishlist feature removal verification"
-    - "Category pages functionality testing"
-    - "Admin text editing mode testing"
-    - "Visual design consistency testing"
-  stuck_tasks: []
+    - "New Product Placements - Homepage Sections"
+    - "Door Number Personalization"
+    - "Buy Now Functionality"
+    - "About Page Canada/USA Service Mentions"
+    - "JavaScript Error - Price String"
+  stuck_tasks:
+    - "New Product Placements - Homepage Sections"
+    - "Door Number Personalization"
+    - "Buy Now Functionality"
+    - "About Page Canada/USA Service Mentions"
+    - "JavaScript Error - Price String"
   test_all: false
   test_priority: "high_first"
 
