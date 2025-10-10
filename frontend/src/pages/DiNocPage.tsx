@@ -168,6 +168,28 @@ const DiNocPage = () => {
           </div>
         </section>
 
+        {/* Di-Noc Video Section */}
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-6">
+            <div className="max-w-6xl mx-auto">
+              <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl bg-slate-900">
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  controls
+                  className="w-full h-full object-cover"
+                  preload="auto"
+                >
+                  <source src="https://customer-assets.emergentagent.com/job_code-journey-79/artifacts/1geiodo0_202509191706%20%281%29%20%281%29.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Features Section */}
         <section className="py-20 bg-gradient-to-b from-background to-muted/30">
           <div className="container mx-auto px-6">
