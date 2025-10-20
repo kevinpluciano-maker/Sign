@@ -34,7 +34,7 @@ const MobileFloatingCTA = () => {
           <div className="flex flex-col gap-3 mb-3">
             {/* Call Button */}
             <a
-              href="tel:+13238430781"
+              href="tel:+16472782905"
               className="flex items-center gap-3 bg-white rounded-full shadow-lg p-4 pr-6 hover:bg-gray-50 transition-all transform hover:scale-105"
             >
               <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
