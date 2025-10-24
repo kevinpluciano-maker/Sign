@@ -111,7 +111,7 @@ const App = () => (
               <Route path="/returns" element={<Returns />} />
               <Route path="/refund-returns" element={<RefundReturns />} />
               <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/checkout" element={<ImprovedCheckout />} />
               <Route path="/order-confirmation" element={<OrderConfirmation />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
