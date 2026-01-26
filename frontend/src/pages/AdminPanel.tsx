@@ -5,7 +5,10 @@ import ImprovedFooter from '@/components/ImprovedFooter';
 import SimpleWYSIWYGEditor from '@/components/admin/SimpleWYSIWYGEditor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Lock, Settings, FileText, Image as ImageIcon, Home } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Lock, Settings, FileText, Image as ImageIcon, Home, Star, Trash2, Edit2, X, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import SEO from '@/components/SEO';
 
