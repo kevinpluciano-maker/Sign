@@ -405,26 +405,47 @@ const ProductDetail = () => {
               {/* Size Selection */}
               {product.sizeOptions && product.sizeOptions.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground mb-2">Size: {selectedSizeOption?.name || 'Select Size'}</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-foreground">Size: {selectedSizeOption?.name || 'Select Size'}</h3>
+                    {!pricingDetails.isPremium && (
+                      <span className="text-xs text-green-600 font-medium">🎉 Bigger size = Bigger discount!</span>
+                    )}
+                  </div>
                   <div className="grid grid-cols-1 gap-2">
-                    {sizeOptions.map((size) => (
-                      <button
-                        key={size.value}
-                        className={`p-2.5 text-left text-sm border rounded-md transition-all duration-200 hover:shadow-sm ${
-                          selectedSize === size.value 
-                            ? "border-primary bg-primary/8 shadow-sm" 
-                            : "border-border hover:border-primary/60 hover:bg-muted/20"
-                        }`}
-                        onClick={() => setSelectedSize(size.value)}
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">{size.name}</span>
-                          <span className="text-sm font-semibold text-primary">
-                            {convertPrice(size.price)}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
+                    {sizeOptions.map((size) => {
+                      const hasBraille = selectedBraille && selectedBraille.toLowerCase() === 'yes';
+                      const sizePricing = getPricingInfo(size.price, size.name, hasBraille);
+                      return (
+                        <button
+                          key={size.value}
+                          className={`p-2.5 text-left text-sm border rounded-md transition-all duration-200 hover:shadow-sm ${
+                            selectedSize === size.value 
+                              ? "border-primary bg-primary/8 shadow-sm" 
+                              : "border-border hover:border-primary/60 hover:bg-muted/20"
+                          }`}
+                          onClick={() => setSelectedSize(size.value)}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{size.name}</span>
+                            <div className="flex items-center gap-2">
+                              {sizePricing.discountPercent > 0 && !sizePricing.isPremium && (
+                                <>
+                                  <span className="text-xs text-muted-foreground line-through">
+                                    {convertPrice(size.price)}
+                                  </span>
+                                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                                    -{sizePricing.discountPercent}%
+                                  </Badge>
+                                </>
+                              )}
+                              <span className="text-sm font-semibold text-primary">
+                                {convertPrice(sizePricing.displayPrice)}
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                   {product.hasCustomSize && (
                     <p className="text-xs text-muted-foreground mt-2">
