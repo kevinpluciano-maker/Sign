@@ -253,7 +253,7 @@ async def get_product_reviews(product_id: str):
     try:
         reviews = await db.reviews.find(
             {"productId": product_id},
-            {"_id": 0}  # Exclude MongoDB _id
+            {"_id": 0, "email": 0, "created_at": 0, "timestamp": 0, "status": 0}  # Exclude private fields
         ).sort("created_at", -1).to_list(100)
         
         # Calculate average rating
