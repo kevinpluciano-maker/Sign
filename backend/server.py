@@ -274,6 +274,64 @@ async def get_product_reviews(product_id: str):
         logging.error(f"Error fetching reviews: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch reviews")
 
+@api_router.get("/admin/reviews")
+async def get_all_reviews():
+    """Get all reviews for admin management"""
+    try:
+        reviews = await db.reviews.find(
+            {},
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(500)
+        return {"reviews": reviews, "total": len(reviews)}
+    except Exception as e:
+        logging.error(f"Error fetching all reviews: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch reviews")
+
+class ReviewUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    rating: Optional[int] = None
+    author: Optional[str] = None
+
+@api_router.put("/admin/reviews/{review_id}")
+async def update_review(review_id: str, review_update: ReviewUpdate):
+    """Update a review (admin only)"""
+    try:
+        update_data = {k: v for k, v in review_update.dict().items() if v is not None}
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No update data provided")
+        
+        result = await db.reviews.update_one(
+            {"id": review_id},
+            {"$set": update_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Review not found")
+        
+        return {"status": "success", "message": "Review updated successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error updating review: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update review")
+
+@api_router.delete("/admin/reviews/{review_id}")
+async def delete_review(review_id: str):
+    """Delete a review (admin only)"""
+    try:
+        result = await db.reviews.delete_one({"id": review_id})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Review not found")
+        
+        return {"status": "success", "message": "Review deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error deleting review: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to delete review")
+
 @api_router.post("/newsletter/subscribe")
 async def subscribe_newsletter(subscription: NewsletterSubscription):
     """Handle newsletter subscriptions"""
