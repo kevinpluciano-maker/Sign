@@ -403,14 +403,9 @@ const ProductDetail = () => {
                         <div className="flex flex-col items-center space-y-1">
                           <span className="font-medium">{option}</span>
                           {option === "Yes" && (
-                            <div className="flex flex-col items-center">
-                              <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
-                                ADA Compliant
-                              </span>
-                              <span className="text-xs text-blue-600 mt-1">
-                                +$10 CAD
-                              </span>
-                            </div>
+                            <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                              ADA Compliant
+                            </span>
                           )}
                         </div>
                       </button>
