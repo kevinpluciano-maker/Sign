@@ -122,10 +122,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const pricingInfo = getPricingInfo(basePrice, actualSizeString, hasBraille);
     let itemPrice = pricingInfo.displayPrice;
     
-    // Add $10 CAD surcharge for Braille option (on top of full price)
-    if (hasBraille) {
-      itemPrice += 10;
-    }
+    // NO additional surcharge for Braille - price simply reverts to original
 
     const cartItem: CartItem = {
       ...product,
