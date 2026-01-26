@@ -175,26 +175,16 @@ const ProductCard = (product: ProductCardProps) => {
                 </span>
               </div> */}
 
-              {/* Price Display - With Discounts */}
-              <div className="space-y-2 mb-4">
+              {/* Price Display - Simple and Clean */}
+              <div className="space-y-1 mb-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-green-600">
+                  <span className="text-2xl font-black text-primary">
                     {convertPrice(pricingInfo.displayPrice)}
                   </span>
                   <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                     {selectedCurrency}
                   </span>
                 </div>
-                {pricingInfo.discountPercent > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-base text-muted-foreground line-through">
-                      {convertPrice(numericPrice)}
-                    </span>
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-lg font-bold">
-                      Save {convertPrice(pricingInfo.savings)}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
 
