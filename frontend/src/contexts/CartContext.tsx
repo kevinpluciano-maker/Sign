@@ -136,7 +136,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       selectedShape,
       customizations,
       addedAt: new Date().toISOString(),
-      itemPrice
+      itemPrice,
+      originalPrice: basePrice,
+      discountPercent: pricingInfo.discountPercent,
+      isPremium: pricingInfo.isPremium
     };
 
     setItems(prevItems => {
