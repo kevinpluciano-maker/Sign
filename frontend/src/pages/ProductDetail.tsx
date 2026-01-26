@@ -156,25 +156,43 @@ const ProductDetail = () => {
     { name: "Standard Size", value: "standard", price: product.price }
   ];
 
-  // Calculate total price including Braille surcharge
-  const calculateTotalPrice = () => {
+  // Calculate pricing with size-based discounts and braille premium
+  const calculatePricingDetails = () => {
     let basePrice = product.price;
+    let sizeString = '';
     
     // Use selected size price if available
     if (selectedSize) {
       const sizeOption = sizeOptions.find(opt => opt.value === selectedSize);
       if (sizeOption) {
         basePrice = sizeOption.price;
+        sizeString = sizeOption.name;
       }
     }
     
-    // Add Braille surcharge if selected
-    const brailleSurcharge = (selectedBraille && selectedBraille.toLowerCase() === 'yes') ? 10 : 0;
+    // Check if braille is selected (premium feature - no discount)
+    const hasBraille = selectedBraille && selectedBraille.toLowerCase() === 'yes';
     
-    return basePrice + brailleSurcharge;
+    // Get pricing info with discount logic
+    const pricingInfo = getPricingInfo(basePrice, sizeString, hasBraille);
+    
+    // Add Braille surcharge if selected (on top of full price)
+    const brailleSurcharge = hasBraille ? 10 : 0;
+    const finalPrice = pricingInfo.displayPrice + brailleSurcharge;
+    
+    return {
+      basePrice,
+      finalPrice,
+      discountPercent: pricingInfo.discountPercent,
+      savings: pricingInfo.savings,
+      isPremium: pricingInfo.isPremium,
+      message: pricingInfo.message,
+      brailleSurcharge
+    };
   };
 
-  const totalPrice = calculateTotalPrice();
+  const pricingDetails = calculatePricingDetails();
+  const totalPrice = pricingDetails.finalPrice;
 
   const renderStars = (rating: number) => {
     const stars = [];
