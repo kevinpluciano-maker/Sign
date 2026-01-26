@@ -43,13 +43,13 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 // Tax rate (13%)
 const TAX_RATE = 0.13;
 
-// Shipping calculation - Free shipping over $75 USD (approximately $100 CAD)
-const FREE_SHIPPING_THRESHOLD = 75; // $75 USD
-const SHIPPING_FEE = 15; // $15 flat rate
+// Shipping calculation - Free shipping over $100 CAD, otherwise $13.71 CAD
+const FREE_SHIPPING_THRESHOLD = 100; // $100 CAD
+const SHIPPING_FEE = 13.71; // $13.71 CAD flat rate
 
 const calculateShipping = (subtotal: number, itemCount: number): number => {
-  if (subtotal >= FREE_SHIPPING_THRESHOLD) return 0; // Free shipping over $75 USD
-  return SHIPPING_FEE; // $15 flat shipping fee
+  if (subtotal >= FREE_SHIPPING_THRESHOLD) return 0; // Free shipping over $100 CAD
+  return SHIPPING_FEE; // $13.71 CAD flat shipping fee
 };
 
 // Extract numeric price from string like "from $58.00" or "$45.99"
