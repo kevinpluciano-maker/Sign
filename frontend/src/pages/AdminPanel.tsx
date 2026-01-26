@@ -57,8 +57,78 @@ const AdminPanel = () => {
 
     setIsAuthenticated(true);
     loadSections();
+    loadReviews();
     setIsLoading(false);
   }, [navigate]);
+
+  // Load reviews from backend
+  const loadReviews = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/reviews`);
+      if (response.ok) {
+        const data = await response.json();
+        setReviews(data.reviews || []);
+      }
+    } catch (error) {
+      console.error('Error loading reviews:', error);
+    }
+  };
+
+  // Delete review
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!confirm('Are you sure you want to delete this review?')) return;
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/reviews/${reviewId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        setReviews(prev => prev.filter(r => r.id !== reviewId));
+        toast.success('Review deleted successfully');
+      } else {
+        throw new Error('Failed to delete');
+      }
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      toast.error('Failed to delete review');
+    }
+  };
+
+  // Start editing review
+  const startEditReview = (review: Review) => {
+    setEditingReview(review.id);
+    setEditForm({
+      title: review.title,
+      content: review.content,
+      rating: review.rating,
+      author: review.author
+    });
+  };
+
+  // Save edited review
+  const handleSaveReview = async (reviewId: string) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/reviews/${reviewId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
+      });
+      
+      if (response.ok) {
+        setReviews(prev => prev.map(r => 
+          r.id === reviewId ? { ...r, ...editForm } : r
+        ));
+        setEditingReview(null);
+        toast.success('Review updated successfully');
+      } else {
+        throw new Error('Failed to update');
+      }
+    } catch (error) {
+      console.error('Error updating review:', error);
+      toast.error('Failed to update review');
+    }
+  };
 
   // Load sections from localStorage
   const loadSections = () => {
