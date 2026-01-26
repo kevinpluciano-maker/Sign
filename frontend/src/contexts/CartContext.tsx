@@ -102,18 +102,28 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } = options;
 
     // Calculate item price based on size selection
-    let itemPrice = extractPrice(product.price);
+    let basePrice = extractPrice(product.price);
+    let actualSizeString = '';
+    
     if (selectedSize && product.sizeOptions) {
       const sizeOption = product.sizeOptions.find(opt => 
         opt.size === selectedSize || `size-${product.sizeOptions?.indexOf(opt)}` === selectedSize
       );
       if (sizeOption) {
-        itemPrice = extractPrice(sizeOption.price);
+        basePrice = extractPrice(sizeOption.price);
+        actualSizeString = sizeOption.size;
       }
     }
     
-    // Add $10 CAD surcharge for Braille option
-    if (selectedBraille && selectedBraille.toLowerCase() === 'yes') {
+    // Determine if braille is selected (premium feature)
+    const hasBraille = selectedBraille && selectedBraille.toLowerCase() === 'yes';
+    
+    // Apply size-based discount (or revert to original if braille selected)
+    const pricingInfo = getPricingInfo(basePrice, actualSizeString, hasBraille);
+    let itemPrice = pricingInfo.displayPrice;
+    
+    // Add $10 CAD surcharge for Braille option (on top of full price)
+    if (hasBraille) {
       itemPrice += 10;
     }
 
