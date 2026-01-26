@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Star, ThumbsUp, CheckCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 
 interface Review {
   id: string;
@@ -22,19 +23,19 @@ interface Review {
 interface ProductReviewsProps {
   productId: string;
   productName: string;
-  reviews: Review[];
-  averageRating: number;
-  totalReviews: number;
 }
 
 const ProductReviews = ({ 
   productId, 
-  productName, 
-  reviews = [],
-  averageRating = 0,
-  totalReviews = 0 
+  productName
 }: ProductReviewsProps) => {
+  const { toast } = useToast();
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [averageRating, setAverageRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [newReview, setNewReview] = useState({
     rating: 0,
     title: "",
@@ -44,44 +45,84 @@ const ProductReviews = ({
   });
   const [hoverRating, setHoverRating] = useState(0);
 
-  const ratingDistribution = [
-    { stars: 5, count: Math.floor(totalReviews * 0.7) },
-    { stars: 4, count: Math.floor(totalReviews * 0.2) },
-    { stars: 3, count: Math.floor(totalReviews * 0.07) },
-    { stars: 2, count: Math.floor(totalReviews * 0.02) },
-    { stars: 1, count: Math.floor(totalReviews * 0.01) }
-  ];
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
+
+  // Fetch reviews on component mount
+  useEffect(() => {
+    fetchReviews();
+  }, [productId]);
+
+  const fetchReviews = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${BACKEND_URL}/api/reviews/${productId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setReviews(data.reviews || []);
+        setAverageRating(data.averageRating || 0);
+        setTotalReviews(data.totalReviews || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (newReview.rating === 0) {
+      toast({
+        title: "Rating Required",
+        description: "Please select a star rating",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    
     const reviewData = {
-      ...newReview,
       productId,
       productName,
-      timestamp: new Date().toISOString()
+      author: newReview.author,
+      email: newReview.email,
+      rating: newReview.rating,
+      title: newReview.title,
+      content: newReview.content
     };
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/reviews`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(reviewData),
-        }
-      );
+      const response = await fetch(`${BACKEND_URL}/api/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reviewData),
+      });
 
       if (response.ok) {
-        alert('Thank you for your review! It will be published after verification.');
+        toast({
+          title: "Review Submitted!",
+          description: "Thank you for sharing your experience.",
+        });
         setShowReviewForm(false);
         setNewReview({ rating: 0, title: "", content: "", author: "", email: "" });
+        // Refresh reviews
+        fetchReviews();
+      } else {
+        throw new Error('Failed to submit');
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      alert('Failed to submit review. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to submit review. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
