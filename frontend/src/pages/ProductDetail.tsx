@@ -350,15 +350,10 @@ const ProductDetail = () => {
                  </div>
                )}
 
-              {/* Size Selection */}
+              {/* Size Selection - Simple */}
               {product.sizeOptions && product.sizeOptions.length > 0 && (
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-semibold text-foreground">Size: {selectedSizeOption?.name || 'Select Size'}</h3>
-                    {!pricingDetails.isPremium && (
-                      <span className="text-xs text-green-600 font-medium">🎉 Bigger size = Bigger discount!</span>
-                    )}
-                  </div>
+                  <h3 className="text-sm font-semibold text-foreground mb-2">Size: {selectedSizeOption?.name || 'Select Size'}</h3>
                   <div className="grid grid-cols-1 gap-2">
                     {sizeOptions.map((size) => {
                       const hasBraille = selectedBraille && selectedBraille.toLowerCase() === 'yes';
@@ -375,21 +370,9 @@ const ProductDetail = () => {
                         >
                           <div className="flex justify-between items-center">
                             <span className="font-medium">{size.name}</span>
-                            <div className="flex items-center gap-2">
-                              {sizePricing.discountPercent > 0 && !sizePricing.isPremium && (
-                                <>
-                                  <span className="text-xs text-muted-foreground line-through">
-                                    {convertPrice(size.price)}
-                                  </span>
-                                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                                    -{sizePricing.discountPercent}%
-                                  </Badge>
-                                </>
-                              )}
-                              <span className="text-sm font-semibold text-primary">
-                                {convertPrice(sizePricing.displayPrice)}
-                              </span>
-                            </div>
+                            <span className="text-sm font-semibold text-primary">
+                              {convertPrice(sizePricing.displayPrice)}
+                            </span>
                           </div>
                         </button>
                       );
