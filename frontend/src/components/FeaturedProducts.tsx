@@ -157,31 +157,17 @@ const FeaturedProducts = () => {
                     </p>
                     
                       <div className="space-y-6">
-                      {/* Calculate discounted price for featured product */}
+                      {/* Simple Price Display */}
                       {(() => {
                         const originalPrice = featuredProduct.price;
                         const firstSize = featuredProduct.sizes?.[0] || "8 x 8 in";
                         const pricingInfo = getPricingInfo(originalPrice, firstSize, false);
                         return (
-                          <>
-                            <div className="flex items-center gap-3 mb-2">
-                              <Badge className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 text-lg">
-                                <Tag className="h-4 w-4 mr-2" />
-                                {pricingInfo.discountPercent}% OFF
-                              </Badge>
-                              <span className="text-green-600 font-bold text-lg">
-                                Save {convertPrice(pricingInfo.savings)} {selectedCurrency}!
-                              </span>
-                            </div>
-                            <div className="flex items-baseline space-x-3">
-                              <span className="text-4xl md:text-5xl font-black text-green-600">
-                                {convertPrice(pricingInfo.displayPrice)} {selectedCurrency}
-                              </span>
-                              <span className="text-2xl text-muted-foreground line-through">
-                                {convertPrice(originalPrice)} {selectedCurrency}
-                              </span>
-                            </div>
-                          </>
+                          <div className="flex items-baseline space-x-3">
+                            <span className="text-4xl md:text-5xl font-black text-primary">
+                              {convertPrice(pricingInfo.displayPrice)} {selectedCurrency}
+                            </span>
+                          </div>
                         );
                       })()}
                       
