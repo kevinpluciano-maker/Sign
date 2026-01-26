@@ -63,11 +63,11 @@ export const getSizeDiscountPercent = (sizeString: string): number => {
     const height = parseFloat(inchMatch[3]);
     const maxDim = Math.max(width, height);
     
-    if (maxDim >= 15) return 25;  // XXL
-    if (maxDim >= 12) return 20;  // XL
-    if (maxDim >= 10) return 15;  // Large
-    if (maxDim >= 8) return 10;   // Medium
-    return 5;                      // Small
+    if (maxDim >= 15) return 80;  // XXL - 80% off
+    if (maxDim >= 12) return 78;  // XL - 78% off
+    if (maxDim >= 10) return 75;  // Large - 75% off
+    if (maxDim >= 8) return 73;   // Medium - 73% off
+    return 65;                     // Small - 65% off
   }
   
   return DEFAULT_DISCOUNT_PERCENT;
