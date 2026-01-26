@@ -573,7 +573,13 @@ const ProductDetail = () => {
           </Tabs>
         </div>
         
-        {/* Product Reviews Section - Removed per client request */}
+        {/* Product Reviews Section */}
+        <div className="container mx-auto px-4 py-12">
+          <ProductReviews 
+            productId={product.id}
+            productName={displayName}
+          />
+        </div>
         
         {/* Related Products Section */}
         <div className="container mx-auto px-4 pb-16">
