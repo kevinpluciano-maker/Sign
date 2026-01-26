@@ -186,14 +186,12 @@ export const applyDiscountsToSizeOptions = (
 
 // Export discount info for UI display
 export const DISCOUNT_INFO = {
-  title: '🔥 MEGA SALE - Up to 80% OFF!',
-  description: 'Huge discounts on all sizes! Select Braille for premium quality at full price.',
+  title: 'Simple Pricing',
+  description: 'Clear pricing with Braille premium option',
   tiers: [
-    { size: 'Small (≤7")', discount: '65%' },
-    { size: 'Medium (8")', discount: '73%' },
-    { size: 'Large (10")', discount: '75%' },
-    { size: 'X-Large (12")', discount: '78%' },
-    { size: 'XX-Large (15"+)', discount: '80%' },
+    { size: '8x8', discount: 'Base price' },
+    { size: '10x10', discount: '+10%' },
+    { size: '12x12', discount: '+$10' },
   ],
-  brailleNote: '🔤 Braille option = Premium quality at original price'
+  brailleNote: 'Braille = Original price'
 };
