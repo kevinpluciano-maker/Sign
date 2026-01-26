@@ -182,9 +182,8 @@ const ProductDetail = () => {
     // Get pricing info with discount logic
     const pricingInfo = getPricingInfo(basePrice, sizeString, hasBraille);
     
-    // Add Braille surcharge if selected (on top of full price)
-    const brailleSurcharge = hasBraille ? 10 : 0;
-    const finalPrice = pricingInfo.displayPrice + brailleSurcharge;
+    // NO additional surcharge - braille just reverts to original price
+    const finalPrice = pricingInfo.displayPrice;
     
     return {
       basePrice,
@@ -193,7 +192,7 @@ const ProductDetail = () => {
       savings: pricingInfo.savings,
       isPremium: pricingInfo.isPremium,
       message: pricingInfo.message,
-      brailleSurcharge
+      brailleSurcharge: 0
     };
   };
 
