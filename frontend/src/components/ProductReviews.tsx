@@ -139,56 +139,49 @@ const ProductReviews = ({
     </div>
   );
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <p className="text-muted-foreground">Loading reviews...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
-      {/* Rating Summary */}
-      <Card>
-        <CardContent className="p-8">
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Overall Rating */}
-            <div className="text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start gap-4 mb-2">
-                <div className="text-5xl font-bold">{averageRating.toFixed(1)}</div>
-                <div>
-                  <StarRating rating={Math.round(averageRating)} />
-                  <p className="text-sm text-gray-600 mt-1">
-                    Based on {totalReviews} reviews
-                  </p>
-                </div>
+      {/* Rating Summary - Only show if there are reviews */}
+      {totalReviews > 0 && (
+        <Card>
+          <CardContent className="p-8">
+            <div className="flex items-center justify-center md:justify-start gap-4 mb-4">
+              <div className="text-5xl font-bold">{averageRating.toFixed(1)}</div>
+              <div>
+                <StarRating rating={Math.round(averageRating)} />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Based on {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}
+                </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
 
-            {/* Rating Distribution */}
-            <div className="space-y-2">
-              {ratingDistribution.map((dist) => (
-                <div key={dist.stars} className="flex items-center gap-3">
-                  <span className="text-sm w-8">{dist.stars}★</span>
-                  <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-yellow-400"
-                      style={{ width: `${(dist.count / totalReviews) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-sm text-gray-600 w-12">{dist.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Write Review Button */}
-          <div className="mt-6 text-center md:text-left">
-            {!showReviewForm ? (
-              <Button onClick={() => setShowReviewForm(true)}>
-                Write a Review
-              </Button>
-            ) : (
-              <Button variant="outline" onClick={() => setShowReviewForm(false)}>
-                Cancel
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Write Review Button */}
+      <div className="text-center md:text-left">
+        {!showReviewForm ? (
+          <Button onClick={() => setShowReviewForm(true)} size="lg">
+            Write a Review
+          </Button>
+        ) : (
+          <Button variant="outline" onClick={() => setShowReviewForm(false)}>
+            Cancel
+          </Button>
+        )}
+      </div>
 
       {/* Review Form */}
       {showReviewForm && (
