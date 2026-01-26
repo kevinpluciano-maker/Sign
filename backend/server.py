@@ -152,7 +152,7 @@ class ReviewData(BaseModel):
     content: str
     author: str
     email: EmailStr
-    timestamp: str
+    timestamp: Optional[str] = None
 
 class NewsletterSubscription(BaseModel):
     email: EmailStr
