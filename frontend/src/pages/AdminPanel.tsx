@@ -350,6 +350,132 @@ const AdminPanel = () => {
               </Card>
             </TabsContent>
 
+            <TabsContent value="reviews" className="space-y-6 mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Customer Reviews</span>
+                    <span className="text-sm font-normal text-muted-foreground">
+                      {reviews.length} total reviews
+                    </span>
+                  </CardTitle>
+                  <CardDescription>
+                    Manage customer reviews - edit or delete as needed
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {reviews.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No reviews yet</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {reviews.map((review) => (
+                        <div key={review.id} className="border rounded-lg p-4 bg-card">
+                          {editingReview === review.id ? (
+                            // Edit Mode
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">Rating:</span>
+                                <div className="flex gap-1">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                      key={star}
+                                      onClick={() => setEditForm(prev => ({ ...prev, rating: star }))}
+                                      className="focus:outline-none"
+                                    >
+                                      <Star
+                                        className={`h-5 w-5 ${
+                                          star <= editForm.rating
+                                            ? 'fill-yellow-400 text-yellow-400'
+                                            : 'text-gray-300'
+                                        }`}
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              <Input
+                                value={editForm.author}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, author: e.target.value }))}
+                                placeholder="Author name"
+                              />
+                              <Input
+                                value={editForm.title}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                                placeholder="Review title"
+                              />
+                              <Textarea
+                                value={editForm.content}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, content: e.target.value }))}
+                                placeholder="Review content"
+                                rows={3}
+                              />
+                              <div className="flex gap-2">
+                                <Button size="sm" onClick={() => handleSaveReview(review.id)}>
+                                  <Check className="h-4 w-4 mr-1" /> Save
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => setEditingReview(null)}>
+                                  <X className="h-4 w-4 mr-1" /> Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            // Display Mode
+                            <div>
+                              <div className="flex items-start justify-between mb-2">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-semibold">{review.author}</span>
+                                    <div className="flex">
+                                      {[1, 2, 3, 4, 5].map((star) => (
+                                        <Star
+                                          key={star}
+                                          className={`h-4 w-4 ${
+                                            star <= review.rating
+                                              ? 'fill-yellow-400 text-yellow-400'
+                                              : 'text-gray-300'
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    {review.productName} • {review.date}
+                                  </p>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => startEditReview(review)}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleDeleteReview(review.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                              <h4 className="font-medium mb-1">{review.title}</h4>
+                              <p className="text-sm text-muted-foreground">{review.content}</p>
+                              {review.email && (
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  Email: {review.email}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="images" className="space-y-6 mt-6">
               <Card>
                 <CardHeader>
