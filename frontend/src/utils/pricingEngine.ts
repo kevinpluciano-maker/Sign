@@ -1,9 +1,10 @@
 /**
- * Emergency Pricing Engine
+ * Simple Pricing Engine
  * 
- * Implements size-based discounts with braille premium pricing:
- * - Larger sizes get larger discounts
- * - Braille add-on reverts price to original (premium feature)
+ * Base price: ~$21 for 8x8
+ * 10x10: +10% extra
+ * 12x12: +$10 extra
+ * Braille: Reverts to original $58-$76 range (no surcharge)
  */
 
 export interface SizeDiscount {
@@ -12,35 +13,34 @@ export interface SizeDiscount {
   sizeName: string;
 }
 
-// Size-based discount tiers (larger sizes = larger discounts)
-// AGGRESSIVE DISCOUNTS - Braille reverts to original price
+// Size-based discount tiers - simplified
 export const SIZE_DISCOUNT_TIERS: SizeDiscount[] = [
-  // Extra Small / Small sizes - 65% discount
-  { sizePattern: /^(3|4|5|6|7)\s*(x|×)\s*(3|4|5|6|7)/i, discountPercent: 65, sizeName: 'XS/S' },
-  { sizePattern: /^(80|90|100)\s*(x|×)\s*(80|90|100)\s*mm/i, discountPercent: 65, sizeName: 'Small (mm)' },
+  // Small sizes - 65% discount
+  { sizePattern: /^(3|4|5|6|7)\s*(x|×)\s*(3|4|5|6|7)/i, discountPercent: 65, sizeName: 'Small' },
+  { sizePattern: /^(80|90|100)\s*(x|×)\s*(80|90|100)\s*mm/i, discountPercent: 65, sizeName: 'Small' },
   
-  // Medium sizes (8x8) - 73% discount ($78.88 -> ~$21)
-  { sizePattern: /^8\s*(x|×)\s*8/i, discountPercent: 73, sizeName: 'Medium 8x8' },
-  { sizePattern: /^(9|9\.8)\s*(x|×)\s*(4|4\.7|5|9)/i, discountPercent: 70, sizeName: 'Medium' },
-  { sizePattern: /^(110|120|130)\s*(x|×)\s*(110|120|130)\s*mm/i, discountPercent: 70, sizeName: 'Medium (mm)' },
+  // 8x8 - Base price (~$21 from $58) = 64% discount
+  { sizePattern: /^8\s*(x|×)\s*8/i, discountPercent: 64, sizeName: '8x8' },
+  { sizePattern: /^(110|120|130)\s*(x|×)\s*(110|120|130)\s*mm/i, discountPercent: 64, sizeName: 'Medium' },
   
-  // Large sizes (10x10) - 75% discount
-  { sizePattern: /^10\s*(x|×)\s*10/i, discountPercent: 75, sizeName: 'Large 10x10' },
-  { sizePattern: /^(11|11\.8)\s*(x|×)\s*(5|5\.5|11)/i, discountPercent: 75, sizeName: 'Large' },
-  { sizePattern: /^(140|150|160)\s*(x|×)\s*(100|140|150|160)\s*mm/i, discountPercent: 75, sizeName: 'Large (mm)' },
+  // 10x10 - Base + 10% = ~$23 from $65 = 65% discount (slightly less than 8x8 to add ~10%)
+  { sizePattern: /^10\s*(x|×)\s*10/i, discountPercent: 64, sizeName: '10x10' },
+  { sizePattern: /^(9|9\.8)\s*(x|×)\s*(4|4\.7|5|9)/i, discountPercent: 64, sizeName: 'Medium' },
+  { sizePattern: /^(11|11\.8)\s*(x|×)\s*(5|5\.5|11)/i, discountPercent: 64, sizeName: 'Large' },
+  { sizePattern: /^(140|150|160)\s*(x|×)\s*(100|140|150|160)\s*mm/i, discountPercent: 64, sizeName: 'Large' },
   
-  // Extra Large sizes (12x12) - 78% discount
-  { sizePattern: /^12\s*(x|×)\s*12/i, discountPercent: 78, sizeName: 'XL 12x12' },
-  { sizePattern: /^(13|13\.8|14)\s*(x|×)\s*(6|6\.3|13|14)/i, discountPercent: 78, sizeName: 'XL' },
-  { sizePattern: /^(170|180|190|200|240)\s*(x|×)\s*(120|140|170|180|190|200|240)\s*mm/i, discountPercent: 78, sizeName: 'XL (mm)' },
+  // 12x12 - Base + $10 = ~$31 from $76 = 59% discount
+  { sizePattern: /^12\s*(x|×)\s*12/i, discountPercent: 59, sizeName: '12x12' },
+  { sizePattern: /^(13|13\.8|14)\s*(x|×)\s*(6|6\.3|13|14)/i, discountPercent: 59, sizeName: 'XL' },
+  { sizePattern: /^(170|180|190|200|240)\s*(x|×)\s*(120|140|170|180|190|200|240)\s*mm/i, discountPercent: 59, sizeName: 'XL' },
   
-  // XXL sizes - 80% discount (maximum)
-  { sizePattern: /^(15|16|18|20)\s*(x|×)\s*(15|16|18|20)/i, discountPercent: 80, sizeName: 'XXL' },
-  { sizePattern: /^(250|300)\s*(x|×)\s*(120|150|250|300)\s*mm/i, discountPercent: 80, sizeName: 'XXL (mm)' },
+  // XXL sizes
+  { sizePattern: /^(15|16|18|20)\s*(x|×)\s*(15|16|18|20)/i, discountPercent: 55, sizeName: 'XXL' },
+  { sizePattern: /^(250|300)\s*(x|×)\s*(120|150|250|300)\s*mm/i, discountPercent: 55, sizeName: 'XXL' },
 ];
 
 // Default discount for sizes that don't match any pattern
-const DEFAULT_DISCOUNT_PERCENT = 70;
+const DEFAULT_DISCOUNT_PERCENT = 64;
 
 /**
  * Get discount percentage based on size string
