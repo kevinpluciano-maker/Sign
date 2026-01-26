@@ -264,8 +264,8 @@ const ProductReviews = ({
                 />
               </div>
 
-              <Button type="submit" className="w-full md:w-auto">
-                Submit Review
+              <Button type="submit" className="w-full md:w-auto" disabled={submitting}>
+                {submitting ? 'Submitting...' : 'Submit Review'}
               </Button>
             </form>
           </CardContent>
@@ -278,7 +278,7 @@ const ProductReviews = ({
         {reviews.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
-              <p className="text-gray-500">No reviews yet. Be the first to review this product!</p>
+              <p className="text-muted-foreground">No reviews yet. Be the first to share your experience!</p>
             </CardContent>
           </Card>
         ) : (
@@ -289,7 +289,7 @@ const ProductReviews = ({
                   <div className="flex items-start gap-4">
                     <Avatar className="h-12 w-12">
                       <AvatarFallback className="bg-cyan-100 text-cyan-700">
-                        {review.author.charAt(0).toUpperCase()}
+                        {review.author?.charAt(0)?.toUpperCase() || 'A'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
@@ -303,33 +303,19 @@ const ProductReviews = ({
                         )}
                       </div>
                       <StarRating rating={review.rating} />
-                      <p className="text-sm text-gray-500 mt-1">{review.date}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{review.date}</p>
                     </div>
                   </div>
                 </div>
 
                 <h4 className="font-semibold text-lg mb-2">{review.title}</h4>
-                <p className="text-gray-700 leading-relaxed mb-4">{review.content}</p>
-
-                {/* Review Images */}
-                {review.images && review.images.length > 0 && (
-                  <div className="flex gap-2 mb-4">
-                    {review.images.map((img, idx) => (
-                      <img
-                        key={idx}
-                        src={img}
-                        alt={`Review image ${idx + 1}`}
-                        className="h-20 w-20 object-cover rounded-lg"
-                      />
-                    ))}
-                  </div>
-                )}
+                <p className="text-muted-foreground leading-relaxed mb-4">{review.content}</p>
 
                 {/* Helpful Button */}
                 <div className="flex items-center gap-2 pt-4 border-t">
-                  <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
+                  <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                     <ThumbsUp className="h-4 w-4" />
-                    <span>Helpful ({review.helpful})</span>
+                    <span>Helpful ({review.helpful || 0})</span>
                   </button>
                 </div>
               </CardContent>
