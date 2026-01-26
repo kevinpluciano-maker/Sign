@@ -50,6 +50,11 @@ const ProductCard = (product: ProductCardProps) => {
   const displayReviews = reviews || 0;
   const [isAdding, setIsAdding] = useState(false);
 
+  // Calculate discounted price (no braille = discount applies)
+  const numericPrice = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.]/g, '')) : price;
+  const firstSize = sizeOptions?.[0]?.size || "8 x 8 in";
+  const pricingInfo = getPricingInfo(numericPrice, firstSize, false); // false = no braille = show discount
+
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
