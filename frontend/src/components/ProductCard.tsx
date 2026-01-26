@@ -136,10 +136,10 @@ const ProductCard = (product: ProductCardProps) => {
           </div>
         )}
         
-        {/* Floating discount badge */}
-        {originalPrice && (
-          <div className="absolute top-4 right-4 z-20 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-            -{Math.round(((Number(originalPrice) - Number(price)) / Number(originalPrice)) * 100)}%
+        {/* Floating discount badge - Always show discount */}
+        {pricingInfo.discountPercent > 0 && (
+          <div className="absolute top-4 right-4 z-20 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg animate-pulse">
+            -{pricingInfo.discountPercent}% OFF
           </div>
         )}
         
