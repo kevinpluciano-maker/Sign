@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, StarHalf, TrendingUp, Award, Sparkles, Eye } from "lucide-react";
+import { Star, StarHalf, TrendingUp, Award, Sparkles, Eye, Tag } from "lucide-react";
 import ProductCard from "./ProductCard";
 import ProductGrid from "./ProductGrid";
 import EditableProductCard from "./editor/EditableProductCard";
@@ -13,6 +13,7 @@ import { useEditor } from "@/contexts/EditorContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { bestSellersProducts } from "@/data/bestSellersProducts";
 import { getAllProducts } from "@/data/productsData";
+import { getPricingInfo } from "@/utils/pricingEngine";
 
 const FeaturedProducts = () => {
   const { isEditing, isPreviewing, sections, updateProductData } = useEditor();
