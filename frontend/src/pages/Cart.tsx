@@ -219,7 +219,7 @@ const Cart = () => {
                         {shipping === 0 ? (
                           <span className="text-green-600 font-medium">FREE</span>
                         ) : (
-                          convertPrice(shipping)
+                          `$${shipping.toFixed(2)}`
                         )}
                       </span>
                     </div>
