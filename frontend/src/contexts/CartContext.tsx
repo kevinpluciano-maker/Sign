@@ -11,6 +11,9 @@ export interface CartItem extends Product {
   customizations?: Record<string, any>;
   addedAt: string;
   itemPrice: number; // Calculated price based on selections
+  originalPrice?: number; // Original price before discount
+  discountPercent?: number; // Applied discount percentage
+  isPremium?: boolean; // True if braille selected (no discount)
 }
 
 interface CartContextType {
