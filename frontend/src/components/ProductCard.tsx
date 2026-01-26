@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { OptimizedImage } from "@/hooks/useImageOptimization";
-import { Star, StarHalf, ShoppingCart, Eye } from "lucide-react";
+import { Star, StarHalf, ShoppingCart, Eye, Tag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
 import { Product } from "@/data/productsData";
+import { getPricingInfo } from "@/utils/pricingEngine";
 
 interface ProductCardProps extends Product {
   // Additional props that may be passed from other components
