@@ -186,14 +186,14 @@ export const applyDiscountsToSizeOptions = (
 
 // Export discount info for UI display
 export const DISCOUNT_INFO = {
-  title: '🎉 Size-Based Discounts!',
-  description: 'Larger sizes = Bigger savings! Braille maintains premium pricing.',
+  title: '🔥 MEGA SALE - Up to 80% OFF!',
+  description: 'Huge discounts on all sizes! Select Braille for premium quality at full price.',
   tiers: [
-    { size: 'Small (≤7")', discount: '5%' },
-    { size: 'Medium (8")', discount: '10%' },
-    { size: 'Large (10")', discount: '15%' },
-    { size: 'X-Large (12")', discount: '20%' },
-    { size: 'XX-Large (15"+)', discount: '25%' },
+    { size: 'Small (≤7")', discount: '65%' },
+    { size: 'Medium (8")', discount: '73%' },
+    { size: 'Large (10")', discount: '75%' },
+    { size: 'X-Large (12")', discount: '78%' },
+    { size: 'XX-Large (15"+)', discount: '80%' },
   ],
-  brailleNote: '🔤 Braille option = Premium pricing (no discount)'
+  brailleNote: '🔤 Braille option = Premium quality at original price'
 };
