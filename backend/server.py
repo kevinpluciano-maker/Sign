@@ -235,28 +235,30 @@ async def submit_review(review_data: ReviewData):
         # Save to database
         review_dict = review_data.dict()
         review_dict['id'] = str(uuid.uuid4())
-        review_dict['status'] = 'pending'  # Reviews need approval
+        review_dict['status'] = 'approved'  # Auto-approve reviews
         review_dict['helpful'] = 0
         review_dict['verified'] = False
+        review_dict['date'] = datetime.now().strftime("%B %d, %Y")
+        review_dict['created_at'] = datetime.now().isoformat()
         await db.reviews.insert_one(review_dict)
         
-        return {"status": "success", "message": "Review submitted for moderation"}
+        return {"status": "success", "message": "Thank you for your review!"}
     except Exception as e:
         logging.error(f"Error submitting review: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to submit review")
 
 @api_router.get("/reviews/{product_id}")
 async def get_product_reviews(product_id: str):
-    """Get approved reviews for a product"""
+    """Get reviews for a product"""
     try:
-        reviews = await db.reviews.find({
-            "productId": product_id,
-            "status": "approved"
-        }).to_list(100)
+        reviews = await db.reviews.find(
+            {"productId": product_id},
+            {"_id": 0}  # Exclude MongoDB _id
+        ).sort("created_at", -1).to_list(100)
         
         # Calculate average rating
         if reviews:
-            avg_rating = sum(r['rating'] for r in reviews) / len(reviews)
+            avg_rating = sum(r.get('rating', 0) for r in reviews) / len(reviews)
             return {
                 "reviews": reviews,
                 "averageRating": round(avg_rating, 1),
