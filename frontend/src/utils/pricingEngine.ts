@@ -40,7 +40,7 @@ export const SIZE_DISCOUNT_TIERS: SizeDiscount[] = [
 ];
 
 // Default discount for sizes that don't match any pattern
-const DEFAULT_DISCOUNT_PERCENT = 8;
+const DEFAULT_DISCOUNT_PERCENT = 70;
 
 /**
  * Get discount percentage based on size string
