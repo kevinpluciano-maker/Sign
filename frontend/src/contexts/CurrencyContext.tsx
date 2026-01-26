@@ -48,7 +48,7 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
     if (numericPrice === 0) return typeof price === "string" ? price : `$${price}`;
     
     const convertedPrice = numericPrice * EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
-    const currencySymbol = currency === "CAD" ? "C$" : "$";
+    const currencySymbol = "$";
     
     // Preserve "from" prefix if it exists
     const hasFromPrefix = typeof price === "string" && price.toLowerCase().includes("from");
