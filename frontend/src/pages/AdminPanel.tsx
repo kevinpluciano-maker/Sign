@@ -20,11 +20,30 @@ interface ContentSection {
   fontFamily: string;
 }
 
+interface Review {
+  id: string;
+  productId: string;
+  productName: string;
+  author: string;
+  email?: string;
+  rating: number;
+  title: string;
+  content: string;
+  date: string;
+  verified: boolean;
+  helpful: number;
+}
+
 const AdminPanel = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [sections, setSections] = useState<ContentSection[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [editingReview, setEditingReview] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ title: '', content: '', rating: 0, author: '' });
+  
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 
   // Initialize sections from localStorage or defaults
   useEffect(() => {
