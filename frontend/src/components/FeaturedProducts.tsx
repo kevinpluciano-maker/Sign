@@ -157,12 +157,33 @@ const FeaturedProducts = () => {
                     </p>
                     
                       <div className="space-y-6">
-                      <div className="flex items-baseline space-x-3">
-                        <span className="text-4xl md:text-5xl font-black price-gradient">
-                          {convertPrice(`from $${featuredProduct.price.toFixed(2)}`)}
-                        </span>
-                        <span className="text-lg text-muted-foreground font-medium">{selectedCurrency}</span>
-                      </div>
+                      {/* Calculate discounted price for featured product */}
+                      {(() => {
+                        const originalPrice = featuredProduct.price;
+                        const firstSize = featuredProduct.sizes?.[0] || "8 x 8 in";
+                        const pricingInfo = getPricingInfo(originalPrice, firstSize, false);
+                        return (
+                          <>
+                            <div className="flex items-center gap-3 mb-2">
+                              <Badge className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 text-lg">
+                                <Tag className="h-4 w-4 mr-2" />
+                                {pricingInfo.discountPercent}% OFF
+                              </Badge>
+                              <span className="text-green-600 font-bold text-lg">
+                                Save {convertPrice(pricingInfo.savings)} {selectedCurrency}!
+                              </span>
+                            </div>
+                            <div className="flex items-baseline space-x-3">
+                              <span className="text-4xl md:text-5xl font-black text-green-600">
+                                {convertPrice(pricingInfo.displayPrice)} {selectedCurrency}
+                              </span>
+                              <span className="text-2xl text-muted-foreground line-through">
+                                {convertPrice(originalPrice)} {selectedCurrency}
+                              </span>
+                            </div>
+                          </>
+                        );
+                      })()}
                       
                       <Button size="lg" className="button-modern text-white px-8 py-4 text-lg font-bold">
                         <Eye className="h-5 w-5 mr-3" />
