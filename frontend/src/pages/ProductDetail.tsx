@@ -313,75 +313,17 @@ const ProductDetail = () => {
               {/* Reviews removed per client request */}
             </div>
 
-            {/* Price */}
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3 flex-wrap gap-2">
-                <span className="text-3xl font-bold">{convertPrice(totalPrice * quantity)} {selectedCurrency}</span>
-                {pricingDetails.discountPercent > 0 && !pricingDetails.isPremium && (
-                  <span className="text-xl text-muted-foreground line-through">
-                    {convertPrice(pricingDetails.basePrice * quantity)} {selectedCurrency}
-                  </span>
-                )}
-                {product.originalPrice && (
-                  <span className="text-xl text-muted-foreground line-through">
-                    {convertPrice(product.originalPrice * quantity)} {selectedCurrency}
-                  </span>
-                )}
+            {/* Price - Simple and Clean */}
+            <div className="space-y-2">
+              <div className="flex items-center space-x-3">
+                <span className="text-3xl font-bold text-primary">{convertPrice(totalPrice * quantity)} {selectedCurrency}</span>
               </div>
               
-              {/* Discount Badge */}
-              {pricingDetails.discountPercent > 0 && !pricingDetails.isPremium && (
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-green-500 hover:bg-green-600 text-white px-3 py-1">
-                    <Tag className="h-3 w-3 mr-1" />
-                    {pricingDetails.discountPercent}% OFF
-                  </Badge>
-                  <span className="text-sm text-green-600 font-medium">
-                    You save {convertPrice(pricingDetails.savings * quantity)} {selectedCurrency}!
-                  </span>
-                </div>
-              )}
-              
-              {/* Premium Braille Badge */}
+              {/* Simple Braille note */}
               {pricingDetails.isPremium && (
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1">
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    Premium Braille
-                  </Badge>
-                  <span className="text-sm text-purple-600 font-medium">
-                    Full price maintained for quality braille
-                  </span>
-                </div>
-              )}
-              
-              {/* Braille Surcharge Info */}
-              {pricingDetails.brailleSurcharge > 0 && (
-                <div className="text-sm text-muted-foreground bg-purple-50 dark:bg-purple-950/30 rounded-lg px-3 py-2 border border-purple-200 dark:border-purple-800">
-                  <div className="flex items-center gap-2">
-                    <span>🔤 Braille option: +{convertPrice(pricingDetails.brailleSurcharge * quantity)} {selectedCurrency}</span>
-                  </div>
-                </div>
-              )}
-              
-              {/* Price Breakdown - Hidden as per client request */}
-              {false && selectedBraille && selectedBraille.toLowerCase() === 'yes' && (
-                <div className="text-sm text-muted-foreground border-l-2 border-primary/20 pl-3">
-                  <div className="space-y-1">
-                    <div className="flex justify-between">
-                      <span>Base price ({quantity}x):</span>
-                      <span>{convertPrice((totalPrice - 10) * quantity)} {selectedCurrency}</span>
-                    </div>
-                    <div className="flex justify-between text-primary">
-                      <span>Braille option ({quantity}x):</span>
-                      <span>+{convertPrice(10 * quantity)} {selectedCurrency}</span>
-                    </div>
-                    <div className="flex justify-between border-t pt-1 font-semibold">
-                      <span>Total:</span>
-                      <span>{convertPrice(totalPrice * quantity)} {selectedCurrency}</span>
-                    </div>
-                  </div>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  With Braille option selected
+                </p>
               )}
             </div>
 
