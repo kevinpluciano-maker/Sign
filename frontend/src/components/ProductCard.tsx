@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { OptimizedImage } from "@/hooks/useImageOptimization";
-import { Star, StarHalf, ShoppingCart, Eye, Tag } from "lucide-react";
+import { Star, StarHalf, ShoppingCart, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
