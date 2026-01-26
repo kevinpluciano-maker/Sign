@@ -275,7 +275,7 @@ const AdminPanel = () => {
           </div>
 
           <Tabs defaultValue="content" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="content">
                 <FileText className="h-4 w-4 mr-2" />
                 Content
@@ -283,6 +283,10 @@ const AdminPanel = () => {
               <TabsTrigger value="homepage">
                 <Home className="h-4 w-4 mr-2" />
                 Homepage
+              </TabsTrigger>
+              <TabsTrigger value="reviews">
+                <Star className="h-4 w-4 mr-2" />
+                Reviews
               </TabsTrigger>
               <TabsTrigger value="images">
                 <ImageIcon className="h-4 w-4 mr-2" />
