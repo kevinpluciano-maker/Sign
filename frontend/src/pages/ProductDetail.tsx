@@ -76,7 +76,13 @@ const ProductDetail = () => {
         setSelectedSize('size-0');
       }
       if (foundProduct.brailleOptions && foundProduct.brailleOptions.length > 0 && !selectedBraille) {
-        setSelectedBraille(foundProduct.brailleOptions[0].toLowerCase().replace(' ', '-'));
+        // Default to "No" braille option to show discounts by default
+        const noOption = foundProduct.brailleOptions.find(opt => opt.toLowerCase() === 'no');
+        if (noOption) {
+          setSelectedBraille(noOption.toLowerCase().replace(' ', '-'));
+        } else {
+          setSelectedBraille(foundProduct.brailleOptions[0].toLowerCase().replace(' ', '-'));
+        }
       }
       if (foundProduct.shapeOptions && foundProduct.shapeOptions.length > 0 && !selectedShape) {
         setSelectedShape(foundProduct.shapeOptions[0].toLowerCase());
