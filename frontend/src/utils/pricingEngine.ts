@@ -75,16 +75,28 @@ export const getSizeDiscountPercent = (sizeString: string): number => {
 
 /**
  * Calculate discounted price for a given size
+ * - Without Braille: Apply size-based discount
+ * - With Braille: Fixed price of $58 (converts to ~$78 CAD)
  */
 export const calculateDiscountedPrice = (
   originalPrice: number,
   sizeString: string,
   hasBraille: boolean
 ): { discountedPrice: number; discountPercent: number; savings: number } => {
-  // If braille is selected, return original price (premium feature)
+  // If braille is selected, return fixed price of $58 USD (≈$78 CAD)
+  // This is the "original" undiscounted price for braille customers
   if (hasBraille) {
+    // Get the base price based on size (8x8=$58, 10x10=$65, 12x12=$76)
+    let braillePrice = 58; // default for 8x8
+    
+    if (sizeString.includes('10') || sizeString.includes('150')) {
+      braillePrice = 65;
+    } else if (sizeString.includes('12') || sizeString.includes('170') || sizeString.includes('180')) {
+      braillePrice = 76;
+    }
+    
     return {
-      discountedPrice: originalPrice,
+      discountedPrice: braillePrice,
       discountPercent: 0,
       savings: 0
     };
