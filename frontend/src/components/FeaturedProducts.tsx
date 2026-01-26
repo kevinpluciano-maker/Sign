@@ -125,15 +125,6 @@ const FeaturedProducts = () => {
                   />
                   {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  
-                  {/* Floating elements */}
-                  <div className="absolute top-6 left-6 bg-white/95 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg">
-                    <div className="flex items-center space-x-2">
-                      <Star className="h-4 w-4 star-gold" />
-                      <span className="font-bold text-gray-800">{featuredProduct.rating}</span>
-                      <span className="text-sm text-gray-600">({featuredProduct.reviewCount})</span>
-                    </div>
-                  </div>
                 </div>
                 
                 <div className="p-8 md:p-12 lg:p-16 flex flex-col justify-center relative">
@@ -141,13 +132,6 @@ const FeaturedProducts = () => {
                   <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-2xl" />
                   
                   <div className="relative z-10">
-                    <div className="flex items-center mb-6">
-                      {renderStars(featuredProduct.rating)}
-                      <span className="ml-4 text-lg font-bold bg-muted/70 px-3 py-1 rounded-full text-muted-foreground">
-                        {featuredProduct.reviewCount} reviews
-                      </span>
-                    </div>
-                    
                     <h3 className="text-3xl md:text-4xl lg:text-5xl font-black mb-6 group-hover:text-primary transition-colors leading-tight">
                       {featuredProduct.name}
                     </h3>
