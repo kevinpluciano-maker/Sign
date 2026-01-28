@@ -26,7 +26,7 @@ const HeroSection = () => {
   }, []);
 
   return (
-    <section className="relative h-[70vh] min-h-[600px] overflow-hidden" id="main-content">
+    <section className="relative h-[60vh] md:h-[70vh] min-h-[500px] md:min-h-[600px] overflow-hidden" id="main-content">
       {/* Video Background */}
       <div className="absolute inset-0">
         <video
@@ -56,15 +56,20 @@ const HeroSection = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/50 md:from-black/25 md:via-black/15 md:to-black/40" />
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/12 to-transparent md:via-black/8" />
 
-      {/* Hero Content - Extra padding to account for header + navigation overlay */}
-      {/* Using inline styles for paddingTop to ensure consistency across dev/production builds */}
+      {/* Hero Content - Responsive padding: smaller on mobile, larger on desktop/tablet */}
+      {/* Mobile: centered content with minimal padding | Desktop/Tablet: extra padding to clear navigation */}
       <div 
-        className="relative z-[5] container mx-auto px-6 h-full flex flex-col items-center justify-center"
+        className="relative z-[5] container mx-auto px-6 h-full flex flex-col items-center justify-center pt-16 md:pt-0"
         style={{ 
-          paddingTop: 'clamp(180px, 25vh, 220px)',
-          marginTop: '0'
+          paddingTop: 'var(--hero-padding-top, 64px)'
         }}
       >
+        {/* CSS custom property for responsive padding - mobile: 64px, tablet/desktop: 200px */}
+        <style>{`
+          @media (min-width: 768px) {
+            .hero-content-wrapper { --hero-padding-top: 200px !important; }
+          }
+        `}</style>
         <div className="max-w-5xl text-center text-white">
           <h1 
             className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-[1.1] text-white"
