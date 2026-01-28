@@ -115,16 +115,16 @@ const Header = ({ showFilters = false }: HeaderProps) => {
           {/* Right Section - Better organized */}
           <div className="flex items-center space-x-3 md:space-x-4">
             {/* Currency Switcher - Desktop */}
-            <div className="hidden md:block">
+            <div className={`hidden md:block ${isHomePage ? 'bg-white/95 rounded-lg shadow-md' : ''}`}>
               <CurrencySwitcher isHomePage={isHomePage} />
             </div>
             
             {/* Desktop Hours - Better styling */}
-            <div className={`hidden lg:block text-right px-3 py-2 rounded-lg ${isHomePage ? 'bg-white/10 backdrop-blur-sm' : 'bg-muted/20'}`}>
-              <div className={`text-xs font-medium ${textClasses}`}>
+            <div className={`hidden lg:block text-right px-4 py-2 rounded-lg ${isHomePage ? 'bg-white/95 shadow-md' : 'bg-muted/20'}`}>
+              <div className={`text-xs font-semibold ${isHomePage ? 'text-gray-800' : textClasses}`}>
                 <span>{headerData.businessHours}</span>
               </div>
-              <div className={`text-xs mt-0.5 ${mutedTextClasses}`}>
+              <div className={`text-xs mt-0.5 ${isHomePage ? 'text-gray-600' : mutedTextClasses}`}>
                 <span>{headerData.quickLinks}</span>
               </div>
             </div>
@@ -136,43 +136,42 @@ const Header = ({ showFilters = false }: HeaderProps) => {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className={`${isHomePage ? 'hover:bg-white/20 text-white' : 'hover:bg-primary/10'}`}
+                  className={`${isHomePage ? 'bg-white/95 hover:bg-white text-gray-800 shadow-md' : 'hover:bg-primary/10'}`}
                   onClick={() => navigate('/account')}
                 >
                   <User className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline text-sm">{user?.name || 'Account'}</span>
+                  <span className="hidden md:inline text-sm font-medium">{user?.name || 'Account'}</span>
                 </Button>
               ) : (
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className={`${isHomePage ? 'hover:bg-white/20 text-white' : 'hover:bg-primary/10'}`}
+                  className={`${isHomePage ? 'bg-white/95 hover:bg-white text-gray-800 shadow-md' : 'hover:bg-primary/10'}`}
                   onClick={() => navigate('/login')}
                 >
                   <LogIn className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline text-sm">Sign In</span>
+                  <span className="hidden md:inline text-sm font-medium">Sign In</span>
                 </Button>
               )}
 
-              {/* Cart - Enhanced mobile visibility */}
+              {/* Cart - Enhanced visibility */}
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`relative p-2 md:px-3 ${isHomePage ? 'hover:bg-white/20 text-white bg-white/10 md:bg-transparent shadow-lg md:shadow-none backdrop-blur-sm border border-white/20 md:border-0' : 'hover:bg-primary/10'}`}
+                className={`relative p-2 md:px-3 ${isHomePage ? 'bg-white/95 hover:bg-white text-gray-800 shadow-md' : 'hover:bg-primary/10'}`}
                 onClick={() => navigate('/cart')}
-                style={isHomePage ? {
+                style={{
                   minWidth: '44px',
                   minHeight: '44px'
-                } : {}}
+                }}
               >
                 <ShoppingCart className="h-5 w-5 md:h-4 md:w-4 md:mr-2" />
-                <span className="hidden md:inline text-sm">Cart</span>
+                <span className="hidden md:inline text-sm font-medium">Cart</span>
                 {totalItems > 0 && (
                   <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 md:h-5 md:w-5 rounded-full p-0 flex items-center justify-center text-xs font-bold z-50 bg-red-500 text-white border-2 border-white shadow-md">
                     {totalItems}
                   </Badge>
                 )}
-                {/* Debug: Show total items even if 0 for testing */}
                 <span className="sr-only">Cart items: {totalItems}</span>
               </Button>
             </div>
