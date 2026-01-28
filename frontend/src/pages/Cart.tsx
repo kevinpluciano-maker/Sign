@@ -159,7 +159,7 @@ const Cart = () => {
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                           {/* Quantity Controls */}
                           <div className="flex items-center gap-2">
                             <Button
@@ -181,11 +181,33 @@ const Cart = () => {
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
+                            
+                            {/* Edit and Remove buttons - visible on mobile inline with quantity */}
+                            <div className="flex items-center gap-1 sm:hidden ml-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditItem(item)}
+                                className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                title="Edit item options"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeFromCart(item.id)}
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                title="Remove item"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
 
-                          {/* Price and Actions */}
-                          <div className="flex items-center gap-2 md:gap-4">
-                            <div className="text-right">
+                          {/* Price and Actions - desktop view */}
+                          <div className="flex items-center justify-between sm:justify-end gap-2 md:gap-4">
+                            <div className="text-left sm:text-right">
                               <div className="font-semibold">
                                 {convertPrice(item.itemPrice * item.quantity)}
                               </div>
@@ -193,22 +215,22 @@ const Cart = () => {
                                 {convertPrice(item.itemPrice)} each
                               </div>
                             </div>
-                            {/* Edit Button */}
+                            {/* Edit Button - hidden on mobile, shown on desktop */}
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEditItem(item)}
-                              className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                              className="hidden sm:flex h-8 w-8 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
                               title="Edit item options"
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            {/* Remove Button */}
+                            {/* Remove Button - hidden on mobile, shown on desktop */}
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => removeFromCart(item.id)}
-                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              className="hidden sm:flex h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                               title="Remove item"
                             >
                               <Trash2 className="h-4 w-4" />
