@@ -175,9 +175,15 @@ export const addResponsiveCSS = () => {
       }
     }
     
-    /* Prevent horizontal scrolling */
-    html, body {
+    /* Prevent horizontal scrolling - only on body to avoid scroll issues */
+    body {
       overflow-x: hidden;
+      overflow-y: auto;
+    }
+    
+    html {
+      overflow-x: hidden;
+      overflow-y: scroll;
     }
     
     /* Mobile-first responsive containers */
