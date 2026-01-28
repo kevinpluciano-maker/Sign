@@ -97,11 +97,8 @@ const Header = ({ showFilters = false }: HeaderProps) => {
             </a>
           </div>
 
-          {/* Desktop Contact Info & Search - Transparent style */}
+          {/* Desktop Contact Info - No search bar */}
           <div className="hidden lg:flex items-center space-x-4 flex-1 justify-center">
-            {/* Product Search Bar */}
-            <ProductSearchBar />
-            
             <div className={`flex items-center space-x-3 text-sm px-4 py-2 rounded-lg ${isHomePage ? 'bg-black/20 backdrop-blur-sm border border-white/10' : 'bg-muted/30'}`}>
               <div className={`p-1.5 rounded-full ${isHomePage ? 'bg-white/20' : 'bg-primary/10'}`}>
                 <Phone className={`h-3.5 w-3.5 ${isHomePage ? 'text-white drop-shadow-md' : 'text-primary'}`} />
