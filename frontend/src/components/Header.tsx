@@ -85,13 +85,13 @@ const Header = ({ showFilters = false }: HeaderProps) => {
           {/* Mobile Menu Button - Uses UnifiedMobileNavigation with conditional filters */}
           <UnifiedMobileNavigation cartItems={totalItems} showFilters={showFilters} />
 
-          {/* Logo Section - Centered and prominent on mobile, always visible */}
+          {/* Logo Section - Transparent with shadow for visibility */}
           <div className="flex-1 flex justify-center md:justify-start md:flex-none">
-            <a href="/" className={`group px-4 py-2 rounded-lg transition-all ${isHomePage ? 'bg-white/95 shadow-lg hover:shadow-xl' : 'bg-muted/30 border border-gray-200'}`}>
+            <a href="/" className={`group px-3 py-2 rounded-lg transition-all ${isHomePage ? 'hover:bg-white/10' : 'bg-muted/30 border border-gray-200'}`}>
               <img
                 src={headerData.logo || acrylicBrailleLogo}
                 alt="Acrylic Braille Signs"
-                className={`h-10 md:h-12 lg:h-14 w-auto object-contain transition-transform group-hover:scale-105`}
+                className={`h-10 md:h-12 lg:h-14 w-auto object-contain transition-transform group-hover:scale-105 ${isHomePage ? 'drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] brightness-110' : ''}`}
                 style={{ maxWidth: 'none', aspectRatio: 'auto' }}
               />
             </a>
