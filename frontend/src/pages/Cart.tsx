@@ -183,8 +183,8 @@ const Cart = () => {
                             </Button>
                           </div>
 
-                          {/* Price and Remove */}
-                          <div className="flex items-center gap-4">
+                          {/* Price and Actions */}
+                          <div className="flex items-center gap-2 md:gap-4">
                             <div className="text-right">
                               <div className="font-semibold">
                                 {convertPrice(item.itemPrice * item.quantity)}
@@ -193,11 +193,23 @@ const Cart = () => {
                                 {convertPrice(item.itemPrice)} each
                               </div>
                             </div>
+                            {/* Edit Button */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditItem(item)}
+                              className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                              title="Edit item options"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            {/* Remove Button */}
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => removeFromCart(item.id)}
                               className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              title="Remove item"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
