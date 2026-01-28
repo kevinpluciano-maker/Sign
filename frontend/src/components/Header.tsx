@@ -54,17 +54,17 @@ const Header = ({ showFilters = false }: HeaderProps) => {
     { label: "Installation Guide", path: "/installation-guide" }
   ];
 
-  // Dynamic styling based on page - Enhanced visibility over video
+  // Dynamic styling based on page - Transparent but visible
   const headerClasses = (isHomePage || isDiNocPage)
-    ? "bg-black/50 backdrop-blur-md absolute top-0 left-0 right-0 z-50 text-white border-b border-white/10"
+    ? "bg-gradient-to-b from-black/60 via-black/40 to-transparent backdrop-blur-[2px] absolute top-0 left-0 right-0 z-50 text-white"
     : "bg-background border-b sticky top-0 z-50";
 
   const topBarClasses = (isHomePage || isDiNocPage)
-    ? "bg-black/40 backdrop-blur-sm py-2 hidden md:block border-b border-white/10"
+    ? "bg-black/30 py-2 hidden md:block"
     : "bg-muted/50 py-2 hidden md:block";
 
-  const textClasses = (isHomePage || isDiNocPage) ? "text-white font-medium drop-shadow-sm" : "text-foreground";
-  const mutedTextClasses = (isHomePage || isDiNocPage) ? "text-white/90 drop-shadow-sm" : "text-muted-foreground";
+  const textClasses = (isHomePage || isDiNocPage) ? "text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" : "text-foreground";
+  const mutedTextClasses = (isHomePage || isDiNocPage) ? "text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" : "text-muted-foreground";
 
   return (
     <header className={headerClasses}>
