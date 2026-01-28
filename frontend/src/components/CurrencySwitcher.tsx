@@ -33,19 +33,19 @@ const CurrencySwitcher = ({ isHomePage = false }: CurrencySwitcherProps) => {
   const currentCurrency = currencies.find(c => c.code === selectedCurrency);
 
   const buttonClasses = isHomePage
-    ? "bg-white/95 border-gray-200 text-gray-800 shadow-md hover:bg-white hover:shadow-lg transition-all duration-200"
+    ? "bg-black/20 border-white/20 text-white hover:bg-white/20 transition-all duration-200 backdrop-blur-sm drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
     : "bg-background border shadow-sm hover:shadow-md transition-all duration-200";
 
   const dropdownClasses = isHomePage
-    ? "w-48 bg-white border-gray-200 shadow-xl z-[100] text-gray-800"
+    ? "w-48 bg-black/80 backdrop-blur-md border-white/20 shadow-xl z-[100] text-white"
     : "w-48 bg-background border shadow-lg z-[100]";
 
   const itemClasses = isHomePage
-    ? "flex items-center space-x-3 cursor-pointer hover:bg-gray-100 text-gray-800"
+    ? "flex items-center space-x-3 cursor-pointer hover:bg-white/20 text-white"
     : "flex items-center space-x-3 cursor-pointer hover:bg-muted";
 
-  const textClasses = isHomePage ? "text-gray-800" : "text-foreground";
-  const mutedTextClasses = isHomePage ? "text-gray-500" : "text-muted-foreground";
+  const textClasses = isHomePage ? "text-white drop-shadow-md" : "text-foreground";
+  const mutedTextClasses = isHomePage ? "text-white/80" : "text-muted-foreground";
 
   return (
     <DropdownMenu>
