@@ -58,18 +58,7 @@ const HeroSection = () => {
 
       {/* Hero Content - Responsive padding: smaller on mobile, larger on desktop/tablet */}
       {/* Mobile: centered content with minimal padding | Desktop/Tablet: extra padding to clear navigation */}
-      <div 
-        className="relative z-[5] container mx-auto px-6 h-full flex flex-col items-center justify-center pt-16 md:pt-0"
-        style={{ 
-          paddingTop: 'var(--hero-padding-top, 64px)'
-        }}
-      >
-        {/* CSS custom property for responsive padding - mobile: 64px, tablet/desktop: 200px */}
-        <style>{`
-          @media (min-width: 768px) {
-            .hero-content-wrapper { --hero-padding-top: 200px !important; }
-          }
-        `}</style>
+      <div className="relative z-[5] container mx-auto px-6 h-full flex flex-col items-center justify-center pt-0 md:pt-48 lg:pt-52">
         <div className="max-w-5xl text-center text-white">
           <h1 
             className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-[1.1] text-white"
