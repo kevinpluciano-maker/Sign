@@ -26,7 +26,7 @@ const HeroSection = () => {
   }, []);
 
   return (
-    <section className="relative h-[60vh] min-h-[500px] overflow-hidden" id="main-content">
+    <section className="relative h-[70vh] min-h-[600px] overflow-hidden" id="main-content">
       {/* Video Background */}
       <div className="absolute inset-0">
         <video
