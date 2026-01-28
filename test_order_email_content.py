@@ -57,7 +57,7 @@ def test_order_notification():
     try:
         # Send the order notification
         response = requests.post(
-            "https://bsign-deploy.preview.emergentagent.com/api/orders/notify",
+            "https://codebrowser-1.preview.emergentagent.com/api/orders/notify",
             json=order_test_data,
             headers={"Content-Type": "application/json"},
             timeout=15
