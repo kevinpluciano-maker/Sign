@@ -102,11 +102,11 @@ const Header = ({ showFilters = false }: HeaderProps) => {
             {/* Product Search Bar */}
             <ProductSearchBar />
             
-            <div className={`flex items-center space-x-3 text-sm px-4 py-2 rounded-lg ${isHomePage ? 'bg-white/10 backdrop-blur-sm' : 'bg-muted/30'}`}>
-              <div className={`p-1.5 rounded-full ${isHomePage ? 'bg-white/20' : 'bg-primary/10'}`}>
-                <Phone className={`h-3.5 w-3.5 ${isHomePage ? 'text-white' : 'text-primary'}`} />
+            <div className={`flex items-center space-x-3 text-sm px-4 py-2.5 rounded-lg ${isHomePage ? 'bg-white/95 shadow-md' : 'bg-muted/30'}`}>
+              <div className={`p-1.5 rounded-full ${isHomePage ? 'bg-primary/10' : 'bg-primary/10'}`}>
+                <Phone className={`h-3.5 w-3.5 ${isHomePage ? 'text-primary' : 'text-primary'}`} />
               </div>
-              <span className={`font-medium ${textClasses}`}>
+              <span className={`font-semibold ${isHomePage ? 'text-gray-800' : textClasses}`}>
                 {headerData.phone}
               </span>
             </div>
