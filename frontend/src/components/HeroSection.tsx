@@ -57,7 +57,14 @@ const HeroSection = () => {
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/12 to-transparent md:via-black/8" />
 
       {/* Hero Content - Extra padding to account for header + navigation overlay */}
-      <div className="relative z-[5] container mx-auto px-6 h-full flex flex-col items-center justify-center" style={{ paddingTop: '200px' }}>
+      {/* Using inline styles for paddingTop to ensure consistency across dev/production builds */}
+      <div 
+        className="relative z-[5] container mx-auto px-6 h-full flex flex-col items-center justify-center"
+        style={{ 
+          paddingTop: 'clamp(180px, 25vh, 220px)',
+          marginTop: '0'
+        }}
+      >
         <div className="max-w-5xl text-center text-white">
           <h1 
             className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-[1.1] text-white"
