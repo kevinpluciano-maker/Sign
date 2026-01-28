@@ -108,8 +108,12 @@ const Cart = () => {
                 <Card key={`${item.id}-${item.selectedSize}-${item.selectedColor}`} className="overflow-hidden">
                   <CardContent className="p-6">
                     <div className="flex gap-4">
-                      {/* Product Image */}
-                      <div className="flex-shrink-0 w-24 h-24 bg-gray-100 rounded-lg overflow-hidden">
+                      {/* Product Image - Clickable to edit */}
+                      <div 
+                        className="flex-shrink-0 w-24 h-24 bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity relative group"
+                        onClick={() => handleEditItem(item)}
+                        title="Click to edit this item"
+                      >
                         <img
                           src={item.image}
                           alt={item.name}
@@ -119,11 +123,20 @@ const Cart = () => {
                             target.src = '/placeholder.svg';
                           }}
                         />
+                        {/* Edit overlay on hover */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Pencil className="h-5 w-5 text-white" />
+                        </div>
                       </div>
 
                       {/* Product Details */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg mb-1 truncate">
+                        {/* Product Name - Clickable to edit */}
+                        <h3 
+                          className="font-semibold text-lg mb-1 truncate cursor-pointer hover:text-blue-600 transition-colors"
+                          onClick={() => handleEditItem(item)}
+                          title="Click to edit this item"
+                        >
                           {item.name}
                         </h3>
                         
