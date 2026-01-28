@@ -112,31 +112,31 @@ const Header = ({ showFilters = false }: HeaderProps) => {
             </div>
           </div>
 
-          {/* Right Section - Better organized */}
+          {/* Right Section - Transparent style */}
           <div className="flex items-center space-x-3 md:space-x-4">
             {/* Currency Switcher - Desktop */}
-            <div className={`hidden md:block ${isHomePage ? 'bg-white/95 rounded-lg shadow-md' : ''}`}>
+            <div className="hidden md:block">
               <CurrencySwitcher isHomePage={isHomePage} />
             </div>
             
-            {/* Desktop Hours - Better styling */}
-            <div className={`hidden lg:block text-right px-4 py-2 rounded-lg ${isHomePage ? 'bg-white/95 shadow-md' : 'bg-muted/20'}`}>
-              <div className={`text-xs font-semibold ${isHomePage ? 'text-gray-800' : textClasses}`}>
+            {/* Desktop Hours - Transparent */}
+            <div className={`hidden lg:block text-right px-4 py-2 rounded-lg ${isHomePage ? 'bg-black/20 backdrop-blur-sm border border-white/10' : 'bg-muted/20'}`}>
+              <div className={`text-xs font-semibold ${textClasses}`}>
                 <span>{headerData.businessHours}</span>
               </div>
-              <div className={`text-xs mt-0.5 ${isHomePage ? 'text-gray-600' : mutedTextClasses}`}>
+              <div className={`text-xs mt-0.5 ${mutedTextClasses}`}>
                 <span>{headerData.quickLinks}</span>
               </div>
             </div>
             
-            {/* Action Buttons - Better styling */}
+            {/* Action Buttons - Transparent style */}
             <div className="flex items-center space-x-2">
               {/* User Account */}
               {isAuthenticated ? (
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className={`${isHomePage ? 'bg-white/95 hover:bg-white text-gray-800 shadow-md' : 'hover:bg-primary/10'}`}
+                  className={`${isHomePage ? 'text-white hover:bg-white/20 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]' : 'hover:bg-primary/10'}`}
                   onClick={() => navigate('/account')}
                 >
                   <User className="h-4 w-4 md:mr-2" />
@@ -146,7 +146,7 @@ const Header = ({ showFilters = false }: HeaderProps) => {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className={`${isHomePage ? 'bg-white/95 hover:bg-white text-gray-800 shadow-md' : 'hover:bg-primary/10'}`}
+                  className={`${isHomePage ? 'text-white hover:bg-white/20 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]' : 'hover:bg-primary/10'}`}
                   onClick={() => navigate('/login')}
                 >
                   <LogIn className="h-4 w-4 md:mr-2" />
@@ -154,11 +154,11 @@ const Header = ({ showFilters = false }: HeaderProps) => {
                 </Button>
               )}
 
-              {/* Cart - Enhanced visibility */}
+              {/* Cart - Transparent with visibility */}
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`relative p-2 md:px-3 ${isHomePage ? 'bg-white/95 hover:bg-white text-gray-800 shadow-md' : 'hover:bg-primary/10'}`}
+                className={`relative p-2 md:px-3 ${isHomePage ? 'text-white hover:bg-white/20 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]' : 'hover:bg-primary/10'}`}
                 onClick={() => navigate('/cart')}
                 style={{
                   minWidth: '44px',
