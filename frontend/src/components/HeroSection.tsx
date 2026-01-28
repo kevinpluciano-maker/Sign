@@ -56,8 +56,8 @@ const HeroSection = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/50 md:from-black/25 md:via-black/15 md:to-black/40" />
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/12 to-transparent md:via-black/8" />
 
-      {/* Hero Content */}
-      <div className="relative z-10 container mx-auto px-6 h-full flex items-center justify-center pt-32 md:pt-40">
+      {/* Hero Content - Extra padding to account for header + navigation overlay */}
+      <div className="relative z-10 container mx-auto px-6 h-full flex items-center justify-center pt-44 md:pt-52 lg:pt-56">
         <div className="max-w-5xl text-center text-white">
           <h1 
             className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-[1.1] text-white"
