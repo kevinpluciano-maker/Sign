@@ -9,7 +9,6 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import CurrencySwitcher from "@/components/CurrencySwitcher";
 import UnifiedMobileNavigation from "@/components/UnifiedMobileNavigation";
-import ProductSearchBar from "@/components/ProductSearchBar";
 
 interface HeaderProps {
   showFilters?: boolean;
