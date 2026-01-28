@@ -24,6 +24,7 @@ const Cart = () => {
   } = useCart();
   
   const { convertPrice, selectedCurrency } = useCurrency();
+  const navigate = useNavigate();
   
   // Helper function to get actual size text
   const getActualSize = (item: any) => {
@@ -35,6 +36,12 @@ const Cart = () => {
       }
     }
     return item.selectedSize;
+  };
+
+  // Handle edit item - navigate to product page
+  const handleEditItem = (item: any) => {
+    // Navigate to product detail page where they can modify options
+    navigate(`/products/${item.slug || item.id}`);
   };
 
   if (items.length === 0) {
