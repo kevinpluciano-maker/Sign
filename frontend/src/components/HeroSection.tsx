@@ -59,17 +59,13 @@ const HeroSection = () => {
       {/* Hero Content - Absolutely positioned for consistent centering across all environments */}
       <div 
         className="absolute inset-0 z-[5] flex items-center justify-center"
-        style={{ 
-          // Offset from top to account for header+nav overlay (about 170px total)
-          top: '0',
-          paddingTop: '0'
-        }}
       >
         <div 
           className="container mx-auto px-6 text-center text-white"
           style={{
-            // Slight offset downward on desktop to account for nav, centered on mobile
-            transform: 'translateY(40px)',
+            // Offset downward to account for header+nav overlay and center content visually
+            // Using transform for consistent behavior across build environments
+            transform: 'translateY(60px)',
             maxWidth: '1200px'
           }}
         >
