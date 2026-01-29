@@ -37,7 +37,7 @@ const HeroSection = () => {
           playsInline
           controls={false}
           disablePictureInPicture
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover hero-video"
           preload="auto"
           style={{
             objectFit: 'cover',
