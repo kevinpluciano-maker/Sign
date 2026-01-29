@@ -27,7 +27,7 @@ const HeroSection = () => {
 
   return (
     <section className="relative h-[60vh] md:h-[70vh] min-h-[500px] md:min-h-[600px] overflow-hidden" id="main-content">
-      {/* Video Background */}
+      {/* Video Background - High quality rendering */}
       <div className="absolute inset-0">
         <video
           ref={videoRef}
@@ -43,10 +43,21 @@ const HeroSection = () => {
             objectFit: 'cover',
             width: '100%',
             height: '100%',
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            // Improve video rendering quality
+            imageRendering: 'auto',
+            WebkitBackfaceVisibility: 'hidden',
+            backfaceVisibility: 'hidden',
+            transform: 'translateZ(0)',
+            WebkitTransform: 'translateZ(0)',
+            // Prevent blur from scaling
+            willChange: 'transform',
+            filter: 'none'
           }}
         >
-          {/* Using CDN for reliable video delivery on Netlify */}
+          {/* Using local video for better quality - deployed with the app */}
+          <source src="/hero-video.mp4" type="video/mp4" />
+          {/* Fallback to CDN if local fails */}
           <source src="https://files.catbox.moe/1ahutt.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
