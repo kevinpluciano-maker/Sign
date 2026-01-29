@@ -56,9 +56,21 @@ const HeroSection = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/50 md:from-black/25 md:via-black/15 md:to-black/40" />
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/12 to-transparent md:via-black/8" />
 
-      {/* Hero Content - Responsive padding: smaller on mobile, larger on desktop/tablet */}
-      {/* Mobile: centered content with minimal padding | Desktop/Tablet: extra padding to clear navigation */}
-      <div className="relative z-[5] container mx-auto px-6 h-full flex flex-col items-center justify-center pt-0 md:pt-48 lg:pt-52">
+      {/* Hero Content - Properly centered with offset for navigation */}
+      {/* Using margin-top instead of padding-top for more consistent behavior across environments */}
+      <div 
+        className="relative z-[5] container mx-auto px-6 h-full flex flex-col items-center justify-center"
+        style={{
+          // Add top margin to offset for header+navigation on desktop, minimal on mobile
+          marginTop: 'var(--hero-offset, 0px)'
+        }}
+      >
+        {/* Responsive offset: mobile=0, tablet/desktop=80px to account for nav overlay */}
+        <style>{`
+          :root { --hero-offset: 0px; }
+          @media (min-width: 768px) { :root { --hero-offset: 80px; } }
+          @media (min-width: 1024px) { :root { --hero-offset: 100px; } }
+        `}</style>
         <div className="max-w-5xl text-center text-white">
           <h1 
             className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-[1.1] text-white"
