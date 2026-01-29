@@ -56,22 +56,23 @@ const HeroSection = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/50 md:from-black/25 md:via-black/15 md:to-black/40" />
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/12 to-transparent md:via-black/8" />
 
-      {/* Hero Content - Properly centered with offset for navigation */}
-      {/* Using margin-top instead of padding-top for more consistent behavior across environments */}
+      {/* Hero Content - Absolutely positioned for consistent centering across all environments */}
       <div 
-        className="relative z-[5] container mx-auto px-6 h-full flex flex-col items-center justify-center"
-        style={{
-          // Add top margin to offset for header+navigation on desktop, minimal on mobile
-          marginTop: 'var(--hero-offset, 0px)'
+        className="absolute inset-0 z-[5] flex items-center justify-center"
+        style={{ 
+          // Offset from top to account for header+nav overlay (about 170px total)
+          top: '0',
+          paddingTop: '0'
         }}
       >
-        {/* Responsive offset: mobile=0, tablet/desktop=80px to account for nav overlay */}
-        <style>{`
-          :root { --hero-offset: 0px; }
-          @media (min-width: 768px) { :root { --hero-offset: 80px; } }
-          @media (min-width: 1024px) { :root { --hero-offset: 100px; } }
-        `}</style>
-        <div className="max-w-5xl text-center text-white">
+        <div 
+          className="container mx-auto px-6 text-center text-white"
+          style={{
+            // Slight offset downward on desktop to account for nav, centered on mobile
+            transform: 'translateY(40px)',
+            maxWidth: '1200px'
+          }}
+        >
           <h1 
             className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-[1.1] text-white"
             style={{
