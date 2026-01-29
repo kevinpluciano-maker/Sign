@@ -63,9 +63,9 @@ const HeroSection = () => {
         </video>
       </div>
       
-      {/* Luxurious gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/50 md:from-black/25 md:via-black/15 md:to-black/40" />
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/12 to-transparent md:via-black/8" />
+      {/* Luxurious gradient overlay - Reduced opacity to show video better */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40 md:from-black/20 md:via-black/10 md:to-black/35" />
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/8 to-transparent md:via-black/5" />
 
       {/* Hero Content - Absolutely positioned for consistent centering across all environments */}
       <div 
