@@ -106,7 +106,7 @@ const HeroSection = () => {
     <section className="relative h-[60vh] md:h-[70vh] min-h-[500px] md:min-h-[600px] overflow-hidden" id="main-content" style={fallbackBgStyle}>
       {/* Video Background - High quality rendering */}
       {!videoError && (
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 hero-video-container" style={{ zIndex: 0 }}>
           <video
             ref={videoRef}
             autoPlay
@@ -116,24 +116,20 @@ const HeroSection = () => {
             controls={false}
             disablePictureInPicture
             preload="auto"
-            className="w-full h-full object-cover hero-video"
+            className="hero-video"
             style={{
-              objectFit: 'cover',
-              width: '100%',
-              height: '100%',
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              minWidth: '100%',
+              minHeight: '100%',
+              width: 'auto',
+              height: 'auto',
+              transform: 'translate(-50%, -50%)',
               pointerEvents: 'none',
-              // Improve video rendering quality
-              imageRendering: 'auto',
-              WebkitBackfaceVisibility: 'hidden',
-              backfaceVisibility: 'hidden',
-              transform: 'translateZ(0)',
-              WebkitTransform: 'translateZ(0)',
-              // Prevent blur from scaling
-              willChange: 'transform',
-              filter: 'none',
               // Ensure video is visible
-              opacity: videoLoaded ? 1 : 0.99,
-              transition: 'opacity 0.3s ease'
+              opacity: 1,
+              zIndex: 0
             }}
             onLoadedData={() => setVideoLoaded(true)}
             onError={() => setVideoError(true)}
