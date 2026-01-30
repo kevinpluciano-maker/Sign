@@ -1,67 +1,151 @@
 import { Button } from "@/components/ui/button";
 import { ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const HeroSection = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoError, setVideoError] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
+      // Handle video load success
+      const handleCanPlay = () => {
+        console.log('Video can play');
+        setVideoLoaded(true);
+      };
+
+      // Handle video errors
+      const handleError = (e: Event) => {
+        console.error('Video error:', e);
+        setVideoError(true);
+      };
+
+      // Attempt to play video with retry logic
       const playVideo = async () => {
         try {
+          // Ensure video is muted (required for autoplay)
           video.muted = true;
           video.loop = true;
           video.playsInline = true;
-          await video.play();
-          console.log('Hero video playing');
+          
+          // Load the video
+          video.load();
+          
+          // Wait a bit for video to be ready
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Try to play
+          const playPromise = video.play();
+          
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log('Hero video playing successfully');
+                setVideoLoaded(true);
+              })
+              .catch((error) => {
+                console.warn('Initial autoplay failed, retrying...', error);
+                // Retry after a short delay
+                setTimeout(async () => {
+                  try {
+                    video.muted = true;
+                    await video.play();
+                    console.log('Hero video playing after retry');
+                    setVideoLoaded(true);
+                  } catch (retryError) {
+                    console.error('Video autoplay failed after retry:', retryError);
+                    // Don't set error - video might still work on user interaction
+                  }
+                }, 500);
+              });
+          }
         } catch (error) {
-          console.error('Video autoplay failed:', error);
+          console.error('Video setup failed:', error);
         }
       };
 
-      playVideo();
+      video.addEventListener('canplay', handleCanPlay);
+      video.addEventListener('error', handleError);
+
+      // Small delay to ensure DOM is ready
+      const timeoutId = setTimeout(playVideo, 100);
+
+      // Also try to play on user interaction (for strict browsers)
+      const handleUserInteraction = () => {
+        if (video.paused) {
+          video.muted = true;
+          video.play().catch(() => {});
+        }
+      };
+
+      document.addEventListener('click', handleUserInteraction, { once: true });
+      document.addEventListener('scroll', handleUserInteraction, { once: true });
+      document.addEventListener('touchstart', handleUserInteraction, { once: true });
+
+      return () => {
+        clearTimeout(timeoutId);
+        video.removeEventListener('canplay', handleCanPlay);
+        video.removeEventListener('error', handleError);
+        document.removeEventListener('click', handleUserInteraction);
+        document.removeEventListener('scroll', handleUserInteraction);
+        document.removeEventListener('touchstart', handleUserInteraction);
+      };
     }
   }, []);
 
+  // Fallback background image in case video fails
+  const fallbackBgStyle = videoError ? {
+    backgroundImage: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+    backgroundSize: 'cover'
+  } : {};
+
   return (
-    <section className="relative h-[60vh] md:h-[70vh] min-h-[500px] md:min-h-[600px] overflow-hidden" id="main-content">
+    <section className="relative h-[60vh] md:h-[70vh] min-h-[500px] md:min-h-[600px] overflow-hidden" id="main-content" style={fallbackBgStyle}>
       {/* Video Background - High quality rendering */}
-      <div className="absolute inset-0">
-        <video
-          ref={videoRef}
-          autoPlay
-          loop
-          muted
-          playsInline
-          controls={false}
-          disablePictureInPicture
-          className="w-full h-full object-cover hero-video"
-          preload="auto"
-          style={{
-            objectFit: 'cover',
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
-            // Improve video rendering quality
-            imageRendering: 'auto',
-            WebkitBackfaceVisibility: 'hidden',
-            backfaceVisibility: 'hidden',
-            transform: 'translateZ(0)',
-            WebkitTransform: 'translateZ(0)',
-            // Prevent blur from scaling
-            willChange: 'transform',
-            filter: 'none'
-          }}
-        >
-          {/* Using local video for better quality - deployed with the app */}
-          <source src="/hero-video.mp4" type="video/mp4" />
-          {/* Fallback to CDN if local fails */}
-          <source src="https://files.catbox.moe/1ahutt.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-      </div>
+      {!videoError && (
+        <div className="absolute inset-0">
+          <video
+            ref={videoRef}
+            autoPlay
+            loop
+            muted
+            playsInline
+            controls={false}
+            disablePictureInPicture
+            preload="auto"
+            className="w-full h-full object-cover hero-video"
+            style={{
+              objectFit: 'cover',
+              width: '100%',
+              height: '100%',
+              pointerEvents: 'none',
+              // Improve video rendering quality
+              imageRendering: 'auto',
+              WebkitBackfaceVisibility: 'hidden',
+              backfaceVisibility: 'hidden',
+              transform: 'translateZ(0)',
+              WebkitTransform: 'translateZ(0)',
+              // Prevent blur from scaling
+              willChange: 'transform',
+              filter: 'none',
+              // Ensure video is visible
+              opacity: videoLoaded ? 1 : 0.99,
+              transition: 'opacity 0.3s ease'
+            }}
+            onLoadedData={() => setVideoLoaded(true)}
+            onError={() => setVideoError(true)}
+          >
+            {/* Primary source - CDN for reliable cross-platform delivery */}
+            <source src="https://files.catbox.moe/1ahutt.mp4" type="video/mp4" />
+            {/* Fallback to local video */}
+            <source src="/hero-video.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      )}
       
       {/* Luxurious gradient overlay - Reduced opacity to show video better */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40 md:from-black/20 md:via-black/10 md:to-black/35" />
