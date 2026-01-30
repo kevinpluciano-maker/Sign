@@ -6,73 +6,114 @@ import { useEffect, useRef, useState } from "react";
 const HeroSection = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoReady, setVideoReady] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+
+  // Video sources - CDN primary, local fallback
+  const VIDEO_CDN_URL = "https://customer-assets.emergentagent.com/job_codebrowser-1/artifacts/7ojfcx81_202509051609%20(1)%20(1).mp4";
+  const VIDEO_LOCAL_URL = "/hero-video.mp4";
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Force video attributes for autoplay
+    // Force video attributes for autoplay on all browsers
     video.muted = true;
     video.loop = true;
     video.playsInline = true;
     video.setAttribute('muted', '');
     video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
 
     const attemptPlay = async () => {
       try {
+        // Small delay to ensure video is ready
+        await new Promise(resolve => setTimeout(resolve, 100));
         await video.play();
         setVideoReady(true);
-        console.log('Hero video playing');
+        console.log('Hero video playing successfully');
       } catch (err) {
-        console.log('Autoplay blocked, waiting for interaction');
+        console.log('Initial autoplay blocked, setting up interaction listeners');
         // Try again on any user interaction
         const playOnInteraction = () => {
-          video.play().then(() => {
-            setVideoReady(true);
-            document.removeEventListener('click', playOnInteraction);
-            document.removeEventListener('scroll', playOnInteraction);
-            document.removeEventListener('touchstart', playOnInteraction);
-          }).catch(() => {});
+          if (video.paused) {
+            video.muted = true;
+            video.play().then(() => {
+              setVideoReady(true);
+              console.log('Video playing after user interaction');
+            }).catch(e => console.log('Play failed:', e));
+          }
         };
-        document.addEventListener('click', playOnInteraction, { once: true });
-        document.addEventListener('scroll', playOnInteraction, { once: true });
-        document.addEventListener('touchstart', playOnInteraction, { once: true });
+        document.addEventListener('click', playOnInteraction);
+        document.addEventListener('scroll', playOnInteraction);
+        document.addEventListener('touchstart', playOnInteraction);
+        document.addEventListener('mousemove', playOnInteraction, { once: true });
+        
+        // Cleanup function
+        return () => {
+          document.removeEventListener('click', playOnInteraction);
+          document.removeEventListener('scroll', playOnInteraction);
+          document.removeEventListener('touchstart', playOnInteraction);
+        };
       }
     };
 
-    // Wait for video to be ready
-    if (video.readyState >= 2) {
+    const handleLoadedData = () => {
+      console.log('Video data loaded');
       attemptPlay();
-    } else {
-      video.addEventListener('loadeddata', attemptPlay, { once: true });
-    }
+    };
+
+    const handleError = (e: Event) => {
+      console.error('Video error, trying fallback:', e);
+      // If CDN fails, try local
+      if (video.src.includes('customer-assets')) {
+        console.log('Switching to local video source');
+        video.src = VIDEO_LOCAL_URL;
+        video.load();
+      } else {
+        setVideoError(true);
+      }
+    };
+
+    video.addEventListener('loadeddata', handleLoadedData);
+    video.addEventListener('error', handleError);
+    video.addEventListener('canplay', attemptPlay);
+
+    // Force load
+    video.load();
 
     return () => {
-      video.removeEventListener('loadeddata', attemptPlay);
+      video.removeEventListener('loadeddata', handleLoadedData);
+      video.removeEventListener('error', handleError);
+      video.removeEventListener('canplay', attemptPlay);
     };
   }, []);
 
   return (
     <section className="relative h-[60vh] md:h-[70vh] min-h-[500px] md:min-h-[600px] overflow-hidden" id="main-content">
       {/* Video Background */}
-      <div className="absolute inset-0 w-full h-full overflow-hidden bg-black">
-        <video
-          ref={videoRef}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          className="absolute top-0 left-0 w-full h-full object-cover"
-          style={{
-            objectFit: 'cover',
-            minWidth: '100%',
-            minHeight: '100%'
-          }}
-        >
-          <source src="/hero-video.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+      <div className="absolute inset-0 w-full h-full overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
+        {!videoError && (
+          <video
+            ref={videoRef}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            className="absolute top-0 left-0 w-full h-full object-cover"
+            style={{
+              objectFit: 'cover',
+              minWidth: '100%',
+              minHeight: '100%'
+            }}
+          >
+            {/* CDN source for reliable delivery on Netlify */}
+            <source src={VIDEO_CDN_URL} type="video/mp4" />
+            {/* Local fallback */}
+            <source src={VIDEO_LOCAL_URL} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        )}
       </div>
       
       {/* Gradient overlay */}
