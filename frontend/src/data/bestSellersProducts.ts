@@ -9,7 +9,7 @@ export const bestSellersProducts = [
   {
     id: "staff-ada-sign",
     name: "Staff ADA Sign",
-    image: "https://files.catbox.moe/146rr4.png",
+    image: "/lovable-uploads/91055f4b-ab58-45a7-8a16-66b44899231a.png",
     price: 58.00,
     rating: 4.9,
     reviewCount: 28,
