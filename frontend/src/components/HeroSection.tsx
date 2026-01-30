@@ -5,147 +5,79 @@ import { useEffect, useRef, useState } from "react";
 
 const HeroSection = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [videoError, setVideoError] = useState(false);
-  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (video) {
-      // Handle video load success
-      const handleCanPlay = () => {
-        console.log('Video can play');
-        setVideoLoaded(true);
-      };
+    if (!video) return;
 
-      // Handle video errors
-      const handleError = (e: Event) => {
-        console.error('Video error:', e);
-        setVideoError(true);
-      };
+    // Force video attributes for autoplay
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', '');
 
-      // Attempt to play video with retry logic
-      const playVideo = async () => {
-        try {
-          // Ensure video is muted (required for autoplay)
-          video.muted = true;
-          video.loop = true;
-          video.playsInline = true;
-          
-          // Load the video
-          video.load();
-          
-          // Wait a bit for video to be ready
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          // Try to play
-          const playPromise = video.play();
-          
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                console.log('Hero video playing successfully');
-                setVideoLoaded(true);
-              })
-              .catch((error) => {
-                console.warn('Initial autoplay failed, retrying...', error);
-                // Retry after a short delay
-                setTimeout(async () => {
-                  try {
-                    video.muted = true;
-                    await video.play();
-                    console.log('Hero video playing after retry');
-                    setVideoLoaded(true);
-                  } catch (retryError) {
-                    console.error('Video autoplay failed after retry:', retryError);
-                    // Don't set error - video might still work on user interaction
-                  }
-                }, 500);
-              });
-          }
-        } catch (error) {
-          console.error('Video setup failed:', error);
-        }
-      };
+    const attemptPlay = async () => {
+      try {
+        await video.play();
+        setVideoReady(true);
+        console.log('Hero video playing');
+      } catch (err) {
+        console.log('Autoplay blocked, waiting for interaction');
+        // Try again on any user interaction
+        const playOnInteraction = () => {
+          video.play().then(() => {
+            setVideoReady(true);
+            document.removeEventListener('click', playOnInteraction);
+            document.removeEventListener('scroll', playOnInteraction);
+            document.removeEventListener('touchstart', playOnInteraction);
+          }).catch(() => {});
+        };
+        document.addEventListener('click', playOnInteraction, { once: true });
+        document.addEventListener('scroll', playOnInteraction, { once: true });
+        document.addEventListener('touchstart', playOnInteraction, { once: true });
+      }
+    };
 
-      video.addEventListener('canplay', handleCanPlay);
-      video.addEventListener('error', handleError);
-
-      // Small delay to ensure DOM is ready
-      const timeoutId = setTimeout(playVideo, 100);
-
-      // Also try to play on user interaction (for strict browsers)
-      const handleUserInteraction = () => {
-        if (video.paused) {
-          video.muted = true;
-          video.play().catch(() => {});
-        }
-      };
-
-      document.addEventListener('click', handleUserInteraction, { once: true });
-      document.addEventListener('scroll', handleUserInteraction, { once: true });
-      document.addEventListener('touchstart', handleUserInteraction, { once: true });
-
-      return () => {
-        clearTimeout(timeoutId);
-        video.removeEventListener('canplay', handleCanPlay);
-        video.removeEventListener('error', handleError);
-        document.removeEventListener('click', handleUserInteraction);
-        document.removeEventListener('scroll', handleUserInteraction);
-        document.removeEventListener('touchstart', handleUserInteraction);
-      };
+    // Wait for video to be ready
+    if (video.readyState >= 2) {
+      attemptPlay();
+    } else {
+      video.addEventListener('loadeddata', attemptPlay, { once: true });
     }
+
+    return () => {
+      video.removeEventListener('loadeddata', attemptPlay);
+    };
   }, []);
 
-  // Fallback background image in case video fails
-  const fallbackBgStyle = videoError ? {
-    backgroundImage: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-    backgroundSize: 'cover'
-  } : {};
-
   return (
-    <section className="relative h-[60vh] md:h-[70vh] min-h-[500px] md:min-h-[600px] overflow-hidden" id="main-content" style={fallbackBgStyle}>
-      {/* Video Background - High quality rendering */}
-      {!videoError && (
-        <div className="absolute inset-0 hero-video-container" style={{ zIndex: 0 }}>
-          <video
-            ref={videoRef}
-            autoPlay
-            loop
-            muted
-            playsInline
-            controls={false}
-            disablePictureInPicture
-            preload="auto"
-            className="hero-video"
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              minWidth: '100%',
-              minHeight: '100%',
-              width: 'auto',
-              height: 'auto',
-              transform: 'translate(-50%, -50%)',
-              pointerEvents: 'none',
-              // Ensure video is visible
-              opacity: 1,
-              zIndex: 0
-            }}
-            onLoadedData={() => setVideoLoaded(true)}
-            onError={() => setVideoError(true)}
-          >
-            {/* Primary source - CDN for reliable cross-platform delivery */}
-            <source src="https://files.catbox.moe/1ahutt.mp4" type="video/mp4" />
-            {/* Fallback to local video */}
-            <source src="/hero-video.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-        </div>
-      )}
+    <section className="relative h-[60vh] md:h-[70vh] min-h-[500px] md:min-h-[600px] overflow-hidden" id="main-content">
+      {/* Video Background */}
+      <div className="absolute inset-0 w-full h-full overflow-hidden bg-black">
+        <video
+          ref={videoRef}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className="absolute top-0 left-0 w-full h-full object-cover"
+          style={{
+            objectFit: 'cover',
+            minWidth: '100%',
+            minHeight: '100%'
+          }}
+        >
+          <source src="/hero-video.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      </div>
       
-      {/* Luxurious gradient overlay - Reduced opacity to show video better */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40 md:from-black/20 md:via-black/10 md:to-black/35" />
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/8 to-transparent md:via-black/5" />
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/10 to-transparent" />
 
       {/* Hero Content - Absolutely positioned for consistent centering across all environments */}
       <div 
