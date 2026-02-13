@@ -170,7 +170,13 @@ const Checkout = () => {
       };
 
       // Create Stripe checkout session
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payments/create-checkout-session`, {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      
+      if (!backendUrl) {
+        throw new Error('Payment service is not configured. Please contact support.');
+      }
+
+      const response = await fetch(`${backendUrl}/api/payments/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,8 +184,15 @@ const Checkout = () => {
         body: JSON.stringify(paymentRequest),
       });
 
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Payment service is currently unavailable. Please contact us at acrylicbraillesigns@gmail.com to complete your order.');
+      }
+
       if (!response.ok) {
-        throw new Error('Failed to create checkout session');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to create checkout session');
       }
 
       const data = await response.json();
