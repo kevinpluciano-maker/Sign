@@ -43,7 +43,10 @@ const AdminPanel = () => {
   const [editingReview, setEditingReview] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ title: '', content: '', rating: 0, author: '' });
   
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
+  // Backend URL - use env variable or fallback to Emergent backend
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 
+                      import.meta.env.REACT_APP_BACKEND_URL || 
+                      'https://codebrowser-1.preview.emergentagent.com';
 
   // Initialize sections from localStorage or defaults
   useEffect(() => {
