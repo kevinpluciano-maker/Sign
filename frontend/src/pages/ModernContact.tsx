@@ -99,9 +99,11 @@ const ModernContact = () => {
         source: formData.source || 'Website contact form'
       };
 
-      console.log('Submitting contact form...', contactData);
-      const backendUrl = import.meta.env.VITE_BACKEND_URL;
-      console.log('Backend URL:', backendUrl);
+      // Backend URL - use env variable or fallback to Emergent backend
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 
+                         import.meta.env.REACT_APP_BACKEND_URL || 
+                         'https://codebrowser-1.preview.emergentagent.com';
+      console.log('Submitting contact form to:', backendUrl);
 
       const response = await fetch(
         `${backendUrl}/api/contact`,
