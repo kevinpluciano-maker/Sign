@@ -134,7 +134,13 @@ const ImprovedCheckout = () => {
 
       console.log('Creating checkout session...', paymentRequest);
 
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payments/create-checkout-session`, {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      
+      if (!backendUrl) {
+        throw new Error('Payment service is not configured. Please contact support.');
+      }
+
+      const response = await fetch(`${backendUrl}/api/payments/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,10 +148,16 @@ const ImprovedCheckout = () => {
         body: JSON.stringify(paymentRequest),
       });
 
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Payment service is currently unavailable. Please contact us at acrylicbraillesigns@gmail.com to complete your order.');
+      }
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         console.error('Payment error:', errorData);
-        throw new Error(errorData.detail || 'Failed to create checkout session');
+        throw new Error(errorData.detail || errorData.message || 'Failed to create checkout session');
       }
 
       const data = await response.json();
@@ -160,7 +172,8 @@ const ImprovedCheckout = () => {
       
     } catch (error: any) {
       console.error('Payment error:', error);
-      alert(`Payment failed: ${error.message}\n\nPlease contact us at acrylicbraillesigns@gmail.com`);
+      const errorMessage = error?.message || 'Payment processing failed';
+      alert(`${errorMessage}\n\nPlease contact us at acrylicbraillesigns@gmail.com to complete your order.`);
       setIsProcessing(false);
     }
   };
