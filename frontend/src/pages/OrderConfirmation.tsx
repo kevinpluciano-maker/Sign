@@ -34,12 +34,17 @@ const OrderConfirmation = () => {
     pollPaymentStatus();
   }, [sessionId]);
 
+  // Backend URL - use env variable or fallback to Emergent backend
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 
+                     import.meta.env.REACT_APP_BACKEND_URL || 
+                     'https://codebrowser-1.preview.emergentagent.com';
+
   const pollPaymentStatus = async () => {
     if (!sessionId) return;
     
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/payments/checkout-status/${sessionId}`
+        `${backendUrl}/api/payments/checkout-status/${sessionId}`
       );
       
       if (!response.ok) {
@@ -79,7 +84,7 @@ const OrderConfirmation = () => {
     
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/payments/order/${sessionId}`
+        `${backendUrl}/api/payments/order/${sessionId}`
       );
       
       if (response.ok) {
