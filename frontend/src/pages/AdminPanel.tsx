@@ -200,11 +200,9 @@ const AdminPanel = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Update the backend (this would be a real API call)
-      const backendUrl = import.meta.env.VITE_API_URL || process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
-      
+      // Update the backend
       try {
-        const response = await fetch(`${backendUrl}/api/content/${sectionId}`, {
+        const response = await fetch(`${BACKEND_URL}/api/content/${sectionId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
