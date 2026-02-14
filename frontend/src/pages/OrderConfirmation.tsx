@@ -35,18 +35,11 @@ const OrderConfirmation = () => {
     pollPaymentStatus();
   }, [sessionId]);
 
-  // Backend URL - use env variable or fallback to Emergent backend
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 
-                     import.meta.env.REACT_APP_BACKEND_URL || 
-                     'https://codebrowser-1.preview.emergentagent.com';
-
   const pollPaymentStatus = async () => {
     if (!sessionId) return;
     
     try {
-      const response = await fetch(
-        `${backendUrl}/api/payments/checkout-status/${sessionId}`
-      );
+      const response = await fetch(API_ENDPOINTS.checkoutStatus(sessionId));
       
       if (!response.ok) {
         throw new Error('Failed to check payment status');
@@ -84,9 +77,7 @@ const OrderConfirmation = () => {
     if (!sessionId) return;
     
     try {
-      const response = await fetch(
-        `${backendUrl}/api/payments/order/${sessionId}`
-      );
+      const response = await fetch(API_ENDPOINTS.orderDetails(sessionId));
       
       if (response.ok) {
         const data = await response.json();
