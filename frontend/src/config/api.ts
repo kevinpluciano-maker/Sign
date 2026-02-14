@@ -1,11 +1,11 @@
 // Centralized API configuration
 // This ensures consistent backend URL across all components
 
-// IMPORTANT: This hardcoded URL is the Emergent backend that handles payments
-// It will be used regardless of environment variables to ensure Netlify deployments work
-const BACKEND_URL = 'https://codebrowser-1.preview.emergentagent.com';
+// IMPORTANT: This is the Render backend that runs 24/7
+// Your checkout will ALWAYS work regardless of Emergent agent status
+const BACKEND_URL = 'https://bsign-backend.onrender.com';
 
-// API endpoints - all using the hardcoded backend URL for reliability
+// API endpoints - all using the Render backend URL for 24/7 reliability
 export const API_ENDPOINTS = {
   // Payment endpoints
   createCheckoutSession: `${BACKEND_URL}/api/payments/create-checkout-session`,
