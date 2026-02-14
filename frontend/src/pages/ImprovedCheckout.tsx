@@ -134,13 +134,9 @@ const ImprovedCheckout = () => {
       };
 
       console.log('Creating checkout session...', paymentRequest);
+      console.log('Using API endpoint:', API_ENDPOINTS.createCheckoutSession);
 
-      // Backend URL - use env variable or fallback to Emergent backend
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 
-                         import.meta.env.REACT_APP_BACKEND_URL || 
-                         'https://codebrowser-1.preview.emergentagent.com';
-
-      const response = await fetch(`${backendUrl}/api/payments/create-checkout-session`, {
+      const response = await fetch(API_ENDPOINTS.createCheckoutSession, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,6 +147,7 @@ const ImprovedCheckout = () => {
       // Check if response is JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
+        console.error('Received non-JSON response:', contentType);
         throw new Error('Payment service is currently unavailable. Please contact us at acrylicbraillesigns@gmail.com to complete your order.');
       }
 
