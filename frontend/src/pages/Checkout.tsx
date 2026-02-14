@@ -170,13 +170,10 @@ const Checkout = () => {
         host_url: window.location.origin
       };
 
-      // Create Stripe checkout session
-      // Backend URL - use env variable or fallback to Emergent backend
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 
-                         import.meta.env.REACT_APP_BACKEND_URL || 
-                         'https://codebrowser-1.preview.emergentagent.com';
-
-      const response = await fetch(`${backendUrl}/api/payments/create-checkout-session`, {
+      // Create Stripe checkout session using centralized API config
+      console.log('Creating checkout session using:', API_ENDPOINTS.createCheckoutSession);
+      
+      const response = await fetch(API_ENDPOINTS.createCheckoutSession, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -187,6 +184,7 @@ const Checkout = () => {
       // Check if response is JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
+        console.error('Received non-JSON response');
         throw new Error('Payment service is currently unavailable. Please contact us at acrylicbraillesigns@gmail.com to complete your order.');
       }
 
