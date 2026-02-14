@@ -342,55 +342,13 @@ class EmailService:
             </html>
             """
             
-            # Send to business owner (both Resend test + Gmail)
+            # Send to business owner (your verified Resend email)
             self.send_notification_email(subject, body_html)
             
-            # Send confirmation to customer
-            customer_subject = f"Order Confirmation - Acrylic Braille Signs"
-            customer_html = f"""
-            <!DOCTYPE html>
-            <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-                        <h1 style="margin: 0;">Thank You for Your Order!</h1>
-                    </div>
-                    <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb;">
-                        <p>Dear {order_data.get('customer_name', 'Customer')},</p>
-                        <p>Your order has been confirmed and payment of <strong>${order_data.get('amount', 0):.2f} {order_data.get('currency', 'CAD').upper()}</strong> has been successfully processed.</p>
-                        
-                        <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                            <p><strong>Order ID:</strong> {order_data.get('session_id', 'N/A')[-12:] if order_data.get('session_id') else 'N/A'}</p>
-                            <p><strong>Date:</strong> {datetime.now().strftime('%B %d, %Y')}</p>
-                        </div>
-                        
-                        <p>We will begin manufacturing your custom signage immediately and will send you shipping updates via email.</p>
-                        
-                        <h3>What's Next?</h3>
-                        <ol>
-                            <li>Our team will review your order details</li>
-                            <li>We'll contact you if we need any clarification</li>
-                            <li>Your signs will be manufactured with care</li>
-                            <li>You'll receive tracking info when shipped</li>
-                        </ol>
-                        
-                        <p>If you have any questions, please contact us:</p>
-                        <p>📧 <a href="mailto:acrylicbraillesigns@gmail.com">acrylicbraillesigns@gmail.com</a><br>
-                        📞 +1 (647) 278-2905</p>
-                        
-                        <p>Thank you for choosing Acrylic Braille Signs!</p>
-                    </div>
-                    <div style="background: #f9fafb; padding: 20px; text-align: center; color: #6b7280; border-radius: 0 0 8px 8px;">
-                        <p style="margin: 0;"><strong>Acrylic Braille Signs</strong></p>
-                        <p style="margin: 5px 0;">Professional ADA Compliant Signage</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-            """
-            
-            if order_data.get('customer_email'):
-                self.send_email(order_data.get('customer_email'), customer_subject, customer_html)
+            # Note: Customer confirmation emails disabled until domain is verified on Resend
+            # Once you verify your domain at resend.com/domains, uncomment below:
+            # if order_data.get('customer_email'):
+            #     self.send_email(order_data.get('customer_email'), customer_subject, customer_html)
             
             return True
             
