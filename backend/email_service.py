@@ -228,7 +228,7 @@ class EmailService:
             </html>
             """
             
-            return self.send_email(self.notification_email, subject, body_html)
+            return self.send_notification_email(subject, body_html)
             
         except Exception as e:
             logger.error(f"❌ Error sending pre-order notification: {str(e)}")
