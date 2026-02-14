@@ -19,10 +19,10 @@ resend.api_key = os.environ.get('RESEND_API_KEY', '')
 class EmailService:
     def __init__(self):
         self.sender_email = "orders@acrylicbraillesigns.com"
-        # Send to both Resend test email AND Gmail
+        # Resend only allows sending to verified email until domain is verified
+        # Using the Resend account email (kevinpluciano@gmail.com)
         self.notification_emails = [
-            "orders@puukirudel.resend.app",  # Resend test email (receives first)
-            os.environ.get('NOTIFICATION_EMAIL', 'acrylicbraillesigns@gmail.com')  # Gmail
+            "kevinpluciano@gmail.com"  # Your Resend verified email
         ]
         self.from_email = "Acrylic Braille Signs <onboarding@resend.dev>"
     
