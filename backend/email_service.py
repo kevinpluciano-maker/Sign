@@ -342,8 +342,8 @@ class EmailService:
             </html>
             """
             
-            # Send to business owner
-            self.send_email(self.notification_email, subject, body_html)
+            # Send to business owner (both Resend test + Gmail)
+            self.send_notification_email(subject, body_html)
             
             # Send confirmation to customer
             customer_subject = f"Order Confirmation - Acrylic Braille Signs"
