@@ -118,7 +118,7 @@ class EmailService:
         </html>
         """
         
-        return self.send_email(self.notification_email, subject, body_html)
+        return self.send_notification_email(subject, body_html)
     
     def send_pre_order_notification(self, order_data: Dict[str, Any]) -> bool:
         """Send pre-order email when customer initiates checkout"""
