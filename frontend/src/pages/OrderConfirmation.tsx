@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import ImprovedNavigation from "@/components/ImprovedNavigation";
 import ImprovedFooter from "@/components/ImprovedFooter";
 import { useCart } from "@/contexts/CartContext";
+import { API_ENDPOINTS } from "@/config/api";
 
 const OrderConfirmation = () => {
   const [searchParams] = useSearchParams();
