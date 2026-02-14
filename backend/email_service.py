@@ -18,33 +18,45 @@ resend.api_key = os.environ.get('RESEND_API_KEY', '')
 
 class EmailService:
     def __init__(self):
-        self.sender_email = "orders@acrylicbraillesigns.com"  # You can use your verified domain or "onboarding@resend.dev" for testing
-        self.notification_email = os.environ.get('NOTIFICATION_EMAIL', 'acrylicbraillesigns@gmail.com')
-        self.from_email = "Acrylic Braille Signs <onboarding@resend.dev>"  # Use this until you verify your domain
+        self.sender_email = "orders@acrylicbraillesigns.com"
+        # Send to both Resend test email AND Gmail
+        self.notification_emails = [
+            "orders@puukirudel.resend.app",  # Resend test email (receives first)
+            os.environ.get('NOTIFICATION_EMAIL', 'acrylicbraillesigns@gmail.com')  # Gmail
+        ]
+        self.from_email = "Acrylic Braille Signs <onboarding@resend.dev>"
     
-    def _send_email_async(self, to_email: str, subject: str, body_html: str):
+    def _send_email_async(self, to_emails: list, subject: str, body_html: str):
         """Send email using Resend API in background thread"""
         try:
             if not resend.api_key:
                 logger.warning("⚠️ RESEND_API_KEY not configured")
                 return False
             
+            # Ensure to_emails is a list
+            if isinstance(to_emails, str):
+                to_emails = [to_emails]
+            
             params = {
                 "from": self.from_email,
-                "to": [to_email],
+                "to": to_emails,
                 "subject": subject,
                 "html": body_html,
             }
             
             response = resend.Emails.send(params)
-            logger.info(f"✅ Email sent successfully to {to_email}, ID: {response.get('id', 'N/A')}")
+            logger.info(f"✅ Email sent successfully to {to_emails}, ID: {response.get('id', 'N/A')}")
             return True
         except Exception as e:
             logger.error(f"❌ Email failed: {str(e)}")
             return False
     
-    def send_email(self, to_email: str, subject: str, body_html: str, body_text: str = None):
+    def send_email(self, to_email, subject: str, body_html: str, body_text: str = None):
         """Send email asynchronously - non-blocking"""
+        # Convert to list if string
+        if isinstance(to_email, str):
+            to_email = [to_email]
+        
         thread = threading.Thread(
             target=self._send_email_async,
             args=(to_email, subject, body_html),
@@ -53,6 +65,10 @@ class EmailService:
         thread.start()
         logger.info(f"📧 Email queued for: {to_email}")
         return True
+    
+    def send_notification_email(self, subject: str, body_html: str):
+        """Send email to ALL notification addresses (Resend test + Gmail)"""
+        return self.send_email(self.notification_emails, subject, body_html)
     
     def send_contact_form_notification(self, form_data: Dict[str, Any]):
         """Send notification when contact form is submitted"""
