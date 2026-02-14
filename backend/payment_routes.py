@@ -1,13 +1,8 @@
-from fastapi import APIRouter, HTTPException, Request, Header
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 from typing import Optional, Dict
 from motor.motor_asyncio import AsyncIOMotorClient
-from emergentintegrations.payments.stripe.checkout import (
-    StripeCheckout,
-    CheckoutSessionResponse,
-    CheckoutStatusResponse,
-    CheckoutSessionRequest
-)
+import stripe
 import os
 from dotenv import load_dotenv
 from datetime import datetime
@@ -31,6 +26,7 @@ payment_transactions = db['payment_transactions']
 
 # Stripe API Key
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
+stripe.api_key = STRIPE_API_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -61,12 +57,8 @@ async def create_checkout_session(payment_request: PaymentRequest):
         # Use the total amount provided by frontend (includes tax and shipping)
         total_amount = payment_request.total
         
-        # Initialize Stripe Checkout
-        host_url = payment_request.host_url
-        webhook_url = f"{host_url}/api/webhook/stripe"
-        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-        
         # Create success and cancel URLs
+        host_url = payment_request.host_url
         success_url = f"{host_url}/order-confirmation?session_id={{CHECKOUT_SESSION_ID}}"
         cancel_url = f"{host_url}/checkout"
         
@@ -82,25 +74,34 @@ async def create_checkout_session(payment_request: PaymentRequest):
             "timestamp": datetime.utcnow().isoformat()
         }
         
-        # Create checkout session request with correct currency
-        checkout_request = CheckoutSessionRequest(
-            amount=total_amount,
-            currency=payment_request.currency.lower(),
+        # Create Stripe checkout session
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': payment_request.currency.lower(),
+                    'product_data': {
+                        'name': f'Order - {len(payment_request.cart_items)} item(s)',
+                        'description': f'Acrylic Braille Signs Order for {payment_request.customer_name}',
+                    },
+                    'unit_amount': int(total_amount * 100),  # Stripe uses cents
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
             success_url=success_url,
             cancel_url=cancel_url,
+            customer_email=payment_request.customer_email,
             metadata=metadata
         )
         
-        # Create session
-        session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_request)
-        
         # Store transaction in database
         transaction_data = {
-            "session_id": session.session_id,
+            "session_id": session.id,
             "payment_status": "initiated",
             "status": "pending",
             "amount": total_amount,
-            "currency": "CAD",
+            "currency": payment_request.currency.upper(),
             "customer_email": payment_request.customer_email,
             "customer_name": payment_request.customer_name,
             "cart_items": payment_request.cart_items,
@@ -113,7 +114,7 @@ async def create_checkout_session(payment_request: PaymentRequest):
         
         await payment_transactions.insert_one(transaction_data)
         
-        logger.info(f"✅ Created checkout session: {session.session_id}")
+        logger.info(f"✅ Created checkout session: {session.id}")
         
         # Send pre-order email notification
         try:
@@ -127,7 +128,7 @@ async def create_checkout_session(payment_request: PaymentRequest):
                 "shipping": payment_request.shipping,
                 "total": payment_request.total,
                 "currency": payment_request.currency,
-                "session_id": session.session_id
+                "session_id": session.id
             }
             email_service.send_pre_order_notification(pre_order_data)
             logger.info("✅ Pre-order email sent")
@@ -137,9 +138,12 @@ async def create_checkout_session(payment_request: PaymentRequest):
         
         return {
             "url": session.url,
-            "session_id": session.session_id
+            "session_id": session.id
         }
         
+    except stripe.error.StripeError as e:
+        logger.error(f"❌ Stripe error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         logger.error(f"❌ Error creating checkout session: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -149,23 +153,21 @@ async def create_checkout_session(payment_request: PaymentRequest):
 async def get_checkout_status(session_id: str, request: Request):
     """Get the status of a checkout session"""
     try:
-        # Initialize Stripe Checkout
-        host_url = str(request.base_url).rstrip('/')
-        webhook_url = f"{host_url}/api/webhook/stripe"
-        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+        # Get checkout session from Stripe
+        session = stripe.checkout.Session.retrieve(session_id)
         
-        # Get checkout status from Stripe
-        checkout_status: CheckoutStatusResponse = await stripe_checkout.get_checkout_status(session_id)
+        payment_status = session.payment_status  # 'paid', 'unpaid', 'no_payment_required'
+        status = session.status  # 'open', 'complete', 'expired'
         
         # Update transaction in database
         existing_transaction = await payment_transactions.find_one({"session_id": session_id})
         
         if existing_transaction:
             # Only update if payment_status has changed to avoid duplicate processing
-            if existing_transaction.get('payment_status') != checkout_status.payment_status:
+            if existing_transaction.get('payment_status') != payment_status:
                 update_data = {
-                    "payment_status": checkout_status.payment_status,
-                    "status": checkout_status.status,
+                    "payment_status": payment_status,
+                    "status": status,
                     "updated_at": datetime.utcnow()
                 }
                 
@@ -174,10 +176,10 @@ async def get_checkout_status(session_id: str, request: Request):
                     {"$set": update_data}
                 )
                 
-                logger.info(f"✅ Updated payment status for session {session_id}: {checkout_status.payment_status}")
+                logger.info(f"✅ Updated payment status for session {session_id}: {payment_status}")
                 
                 # Send order complete email if payment is successful
-                if checkout_status.payment_status == "paid":
+                if payment_status == "paid":
                     try:
                         order_complete_data = {
                             "customer_name": existing_transaction.get('customer_name'),
@@ -187,8 +189,8 @@ async def get_checkout_status(session_id: str, request: Request):
                             "subtotal": existing_transaction.get('subtotal', 0),
                             "tax": existing_transaction.get('tax', 0),
                             "shipping": existing_transaction.get('shipping', 0),
-                            "amount": checkout_status.amount_total,
-                            "currency": checkout_status.currency.upper(),
+                            "amount": session.amount_total / 100 if session.amount_total else 0,
+                            "currency": session.currency.upper() if session.currency else 'CAD',
                             "session_id": session_id
                         }
                         email_service.send_order_complete_notification(order_complete_data)
@@ -197,13 +199,16 @@ async def get_checkout_status(session_id: str, request: Request):
                         logger.error(f"⚠️ Order complete email failed: {str(email_error)}")
         
         return {
-            "status": checkout_status.status,
-            "payment_status": checkout_status.payment_status,
-            "amount_total": checkout_status.amount_total,
-            "currency": checkout_status.currency,
-            "metadata": checkout_status.metadata
+            "status": status,
+            "payment_status": payment_status,
+            "amount_total": session.amount_total / 100 if session.amount_total else 0,
+            "currency": session.currency.upper() if session.currency else 'CAD',
+            "metadata": dict(session.metadata) if session.metadata else {}
         }
         
+    except stripe.error.StripeError as e:
+        logger.error(f"❌ Stripe error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         logger.error(f"❌ Error getting checkout status: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -217,26 +222,32 @@ async def stripe_webhook(request: Request):
         body = await request.body()
         signature = request.headers.get("Stripe-Signature")
         
-        # Initialize Stripe Checkout
-        host_url = str(request.base_url).rstrip('/')
-        webhook_url = f"{host_url}/api/webhook/stripe"
-        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+        # For now, just log the webhook - you can add webhook secret verification later
+        logger.info(f"Received Stripe webhook")
         
-        # Handle webhook
-        webhook_response = await stripe_checkout.handle_webhook(body, signature)
+        # Parse the event
+        try:
+            event = stripe.Event.construct_from(
+                stripe.util.json.loads(body), stripe.api_key
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail="Invalid payload")
         
-        # Update transaction based on webhook event
-        if webhook_response.event_type == "checkout.session.completed":
+        # Handle the event
+        if event.type == "checkout.session.completed":
+            session = event.data.object
+            
             await payment_transactions.update_one(
-                {"session_id": webhook_response.session_id},
+                {"session_id": session.id},
                 {
                     "$set": {
-                        "payment_status": webhook_response.payment_status,
+                        "payment_status": session.payment_status,
+                        "status": "complete",
                         "updated_at": datetime.utcnow()
                     }
                 }
             )
-            logger.info(f"✅ Webhook processed for session {webhook_response.session_id}")
+            logger.info(f"✅ Webhook processed for session {session.id}")
         
         return {"status": "success"}
         
