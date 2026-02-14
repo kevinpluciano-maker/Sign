@@ -14,6 +14,7 @@ import ImprovedNavigation from "@/components/ImprovedNavigation";
 import ImprovedFooter from "@/components/ImprovedFooter";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { API_ENDPOINTS } from "@/config/api";
 
 const ImprovedCheckout = () => {
   const { items, totalItems, subtotal, tax, shipping, totalPrice } = useCart();
