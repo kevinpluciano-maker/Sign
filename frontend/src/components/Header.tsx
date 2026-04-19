@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, ShoppingCart, User, Phone, Mail, LogIn } from "lucide-react";
+import { Search, ShoppingCart, User, Phone, Mail, LogIn, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -17,7 +17,7 @@ interface HeaderProps {
 const Header = ({ showFilters = false }: HeaderProps) => {
   const { totalItems } = useCart();
   const { headerData, updateHeaderData } = useEditor();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -127,6 +127,20 @@ const Header = ({ showFilters = false }: HeaderProps) => {
             
             {/* Action Buttons - Transparent style */}
             <div className="flex items-center space-x-2">
+              {/* Admin shortcut — visible only when signed in as admin */}
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`${isHomePage ? 'text-white hover:bg-white/20 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]' : 'hover:bg-primary/10'}`}
+                  onClick={() => navigate('/admin')}
+                  data-testid="header-admin-link"
+                >
+                  <LayoutDashboard className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline text-sm font-medium">Admin</span>
+                </Button>
+              )}
+
               {/* User Account */}
               {isAuthenticated ? (
                 <Button 

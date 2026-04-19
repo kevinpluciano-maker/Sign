@@ -1,36 +1,20 @@
-import React from 'react';
+// [DEPRECATED] Old inline editor for text fields — now renders plain content.
+import { ReactNode } from 'react';
 
-interface InlineEditorProps {
-  value: string;
-  onSave: (value: string) => void;
-  placeholder?: string;
+interface Props {
+  value?: string;
+  onSave?: (value: string) => void;
+  as?: keyof JSX.IntrinsicElements;
   className?: string;
-  editClassName?: string;
+  children?: ReactNode;
+  placeholder?: string;
   multiline?: boolean;
   maxLength?: number;
-  required?: boolean;
 }
 
-const InlineEditor: React.FC<InlineEditorProps> = ({
-  value,
-  onSave,
-  placeholder = "Click to edit",
-  className = "",
-  editClassName = "",
-  multiline = false,
-  maxLength,
-  required = false
-}) => {
-  // Simplified version - just display text without editing functionality
-  // This prevents blank pages while maintaining component compatibility
-  
-  const displayValue = value || placeholder;
-  
-  return (
-    <span className={className}>
-      {displayValue}
-    </span>
-  );
+const InlineEditor = ({ value, as: Tag = 'span', className, children }: Props) => {
+  const Component: any = Tag;
+  return <Component className={className}>{children ?? value}</Component>;
 };
 
 export default InlineEditor;

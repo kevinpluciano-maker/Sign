@@ -1,12 +1,13 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+/**
+ * [REFACTORED] EditorContext now serves ONLY as read-only config source
+ * for header/footer components. All legacy edit-mode / localStorage / section
+ * reorder / publish functionality is removed. Content management happens
+ * exclusively via the new /admin route (persisted to MongoDB).
+ */
+import React, { createContext, useContext } from 'react';
 
 interface EditorData {
-  sections: Array<{
-    id: string;
-    title: string;
-    content: string;
-    order: number;
-  }>;
+  sections: Array<{ id: string; title: string; content: string; order: number; visible?: boolean }>;
   productData: Record<string, any>;
   headerData: {
     phone: string;
@@ -23,20 +24,23 @@ interface EditorData {
     email: string;
     businessHours: string;
     year: string;
+    newsletter?: { title: string; description: string };
   };
 }
 
 interface EditorContextType {
   isEditing: boolean;
   isPreviewing: boolean;
-  editorData: EditorData;
   sections: EditorData['sections'];
   productData: EditorData['productData'];
   headerData: EditorData['headerData'];
   footerData: EditorData['footerData'];
+  // All mutators are no-ops — the legacy admin is fully deprecated.
   toggleEditing: () => void;
   togglePreviewing: () => void;
   updateSections: (sections: EditorData['sections']) => void;
+  updateSectionOrder: (sections: EditorData['sections']) => void;
+  toggleSectionVisibility: (id: string) => void;
   updateProductData: (data: Record<string, any>) => void;
   updateHeaderData: (data: Partial<EditorData['headerData']>) => void;
   updateFooterData: (data: Partial<EditorData['footerData']>) => void;
@@ -46,304 +50,64 @@ interface EditorContextType {
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
-const defaultSections = [
-  { id: 'header', title: 'Header', content: '', order: 1 },
-  { id: 'navigation', title: 'Navigation', content: '', order: 2 },
-  { id: 'hero', title: 'Hero Section', content: '', order: 3 },
-  { id: 'featured-products', title: 'Featured Products', content: '', order: 4 },
-  { id: 'features', title: 'Features', content: '', order: 5 },
-  { id: 'footer', title: 'Footer', content: '', order: 6 }
+const sections: EditorData['sections'] = [
+  { id: 'header', title: 'Header', content: '', order: 1, visible: true },
+  { id: 'navigation', title: 'Navigation', content: '', order: 2, visible: true },
+  { id: 'hero', title: 'Hero Section', content: '', order: 3, visible: true },
+  { id: 'featured-products', title: 'Featured Products', content: '', order: 4, visible: true },
+  { id: 'features', title: 'Features', content: '', order: 5, visible: true },
+  { id: 'footer', title: 'Footer', content: '', order: 6, visible: true },
 ];
 
-const defaultHeaderData = {
+const headerData: EditorData['headerData'] = {
   phone: '+1 (647) 278-2905',
   email: 'acrylicbraillesigns@gmail.com',
   businessHours: '7:00 AM - 4:00 PM EST',
   topBarText: 'Nationwide ADA Compliance - Expert Braille Signage - Premium Quality Guarantee',
-  quickLinks: 'ADA Guides | Braille Signs | Custom Projects'
+  quickLinks: 'ADA Guides | Braille Signs | Custom Projects',
 };
 
-const defaultFooterData = {
+const footerData: EditorData['footerData'] = {
   companyName: 'Acrylic Braille Signs',
-  companyDescription: 'Professional ADA compliant acrylic braille signage solutions for offices, hospitals, and commercial spaces. Quality guaranteed with Canada & USA service.',
+  companyDescription:
+    'Professional ADA compliant acrylic braille signage solutions for offices, hospitals, and commercial spaces. Quality guaranteed with Canada & USA service.',
   phone: '+1 (647) 278-2905',
   email: 'acrylicbraillesigns@gmail.com',
   businessHours: 'Business Hours: 7:00 AM - 4:00 PM EST',
-  year: '2025'
+  year: '2025',
+  newsletter: {
+    title: 'Stay Updated',
+    description: 'Get the latest on new products and special offers.',
+  },
 };
 
-// Robust localStorage functions with comprehensive error handling
-const getFromStorage = (key: string, defaultValue: any) => {
-  try {
-    if (typeof window === 'undefined') return defaultValue;
-    const item = localStorage.getItem(key);
-    if (!item) {
-      console.log(`No data in localStorage for [${key}], using default`);
-      return defaultValue;
-    }
-    const parsed = JSON.parse(item);
-    console.log(`✅ Loaded from localStorage [${key}]:`, parsed);
-    return parsed;
-  } catch (error) {
-    console.error(`❌ Error reading from localStorage [${key}]:`, error);
-    return defaultValue;
-  }
-};
-
-const saveToStorage = (key: string, value: any) => {
-  try {
-    if (typeof window === 'undefined') return false;
-    const serialized = JSON.stringify(value);
-    localStorage.setItem(key, serialized);
-    console.log(`✅ Successfully saved to localStorage [${key}]`);
-    return true;
-  } catch (error) {
-    console.error(`❌ Error saving to localStorage [${key}]:`, error);
-    return false;
-  }
-};
-
-// Show user notifications
-const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-  if (typeof window === 'undefined') return;
-  
-  // Remove existing notifications
-  const existing = document.querySelectorAll('.editor-notification');
-  existing.forEach(el => el.remove());
-  
-  const notification = document.createElement('div');
-  notification.className = 'editor-notification';
-  notification.textContent = message;
-  notification.style.cssText = `
-    position: fixed;
-    top: 80px;
-    right: 20px;
-    background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
-    color: white;
-    padding: 16px 24px;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 14px;
-    z-index: 10000;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-    transform: translateX(100%);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    max-width: 350px;
-    word-wrap: break-word;
-  `;
-  
-  document.body.appendChild(notification);
-  
-  // Animate in
-  setTimeout(() => {
-    notification.style.transform = 'translateX(0)';
-  }, 10);
-  
-  // Auto remove
-  setTimeout(() => {
-    notification.style.transform = 'translateX(100%)';
-    setTimeout(() => {
-      if (document.body.contains(notification)) {
-        document.body.removeChild(notification);
-      }
-    }, 400);
-  }, type === 'error' ? 5000 : 3000);
-};
+const noop = () => {};
+const noopAsync = async () => {};
 
 export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [isPreviewing, setIsPreviewing] = useState(false);
-
-  // Initialize state with localStorage data
-  const [sections, setSections] = useState(() => 
-    getFromStorage('editor-sections', defaultSections)
-  );
-  
-  const [productData, setProductData] = useState(() => 
-    getFromStorage('editor-product-data', {})
-  );
-  
-  const [headerData, setHeaderData] = useState(() => 
-    getFromStorage('editor-header-data', defaultHeaderData)
-  );
-  
-  const [footerData, setFooterData] = useState(() => 
-    getFromStorage('editor-footer-data', defaultFooterData)
-  );
-
-  // Auto-save to localStorage with debouncing
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      saveToStorage('editor-sections', sections);
-    }, 300);
-    return () => clearTimeout(timeoutId);
-  }, [sections]);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      saveToStorage('editor-product-data', productData);
-    }, 300);
-    return () => clearTimeout(timeoutId);
-  }, [productData]);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      saveToStorage('editor-header-data', headerData);
-    }, 300);
-    return () => clearTimeout(timeoutId);
-  }, [headerData]);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      saveToStorage('editor-footer-data', footerData);
-    }, 300);
-    return () => clearTimeout(timeoutId);
-  }, [footerData]);
-
-  const editorData: EditorData = {
-    sections,
-    productData,
-    headerData,
-    footerData
-  };
-
-  const toggleEditing = useCallback(() => {
-    setIsEditing(prev => {
-      const newState = !prev;
-      console.log(`🔧 Edit mode ${newState ? 'activated' : 'deactivated'}`);
-      showNotification(`Edit mode ${newState ? 'activated' : 'deactivated'}`, 'info');
-      return newState;
-    });
-  }, []);
-
-  const togglePreviewing = useCallback(() => {
-    setIsPreviewing(prev => {
-      const newState = !prev;
-      console.log(`👁️ Preview mode ${newState ? 'activated' : 'deactivated'}`);
-      showNotification(`Preview mode ${newState ? 'activated' : 'deactivated'}`, 'info');
-      return newState;
-    });
-  }, []);
-
-  const updateSections = useCallback((newSections: EditorData['sections']) => {
-    console.log('📝 Updating sections:', newSections);
-    setSections(newSections);
-  }, []);
-
-  const updateProductData = useCallback((data: Record<string, any>) => {
-    console.log('🛍️ Updating product data:', data);
-    setProductData(prev => ({ ...prev, ...data }));
-  }, []);
-
-  const updateHeaderData = useCallback((data: Partial<EditorData['headerData']>) => {
-    console.log('📋 Updating header data:', data);
-    setHeaderData(prev => ({ ...prev, ...data }));
-  }, []);
-
-  const updateFooterData = useCallback((data: Partial<EditorData['footerData']>) => {
-    console.log('🦶 Updating footer data:', data);
-    setFooterData(prev => ({ ...prev, ...data }));
-  }, []);
-
-  const saveChanges = useCallback(async () => {
-    try {
-      console.log('💾 Starting save process...');
-      
-      // Force immediate save to localStorage
-      const saveResults = [
-        saveToStorage('editor-sections', sections),
-        saveToStorage('editor-product-data', productData),
-        saveToStorage('editor-header-data', headerData),
-        saveToStorage('editor-footer-data', footerData)
-      ];
-      
-      const allSaved = saveResults.every(result => result === true);
-      
-      if (!allSaved) {
-        throw new Error('Failed to save some data to localStorage');
-      }
-      
-      // Verify data was saved correctly
-      const verification = [
-        getFromStorage('editor-sections', null),
-        getFromStorage('editor-product-data', null),
-        getFromStorage('editor-header-data', null),
-        getFromStorage('editor-footer-data', null)
-      ];
-      
-      const allVerified = verification.every(data => data !== null);
-      
-      if (!allVerified) {
-        throw new Error('Data verification failed after save');
-      }
-      
-      console.log('✅ All changes saved successfully');
-      showNotification('✅ Changes saved successfully!', 'success');
-      
-    } catch (error) {
-      console.error('❌ Error saving changes:', error);
-      showNotification('❌ Save failed. Please try again.', 'error');
-      throw error;
-    }
-  }, [sections, productData, headerData, footerData]);
-
-  const publishChanges = useCallback(async () => {
-    try {
-      console.log('🚀 Starting publish process...');
-      
-      // First save all changes
-      await saveChanges();
-      
-      // Mark as published
-      const publishTime = new Date().toISOString();
-      saveToStorage('editor-last-published', publishTime);
-      
-      console.log('🚀 Changes published successfully at:', publishTime);
-      showNotification('🚀 Changes published successfully!', 'success');
-      
-      // Optional: Show published state briefly
-      setTimeout(() => {
-        if (isEditing || isPreviewing) {
-          showNotification('💡 Changes are now live on your website', 'info');
-        }
-      }, 1000);
-      
-    } catch (error) {
-      console.error('❌ Error publishing changes:', error);
-      showNotification('❌ Publish failed. Please try again.', 'error');
-      throw error;
-    }
-  }, [saveChanges, isEditing, isPreviewing]);
-
   const value: EditorContextType = {
-    isEditing,
-    isPreviewing,
-    editorData,
+    isEditing: false,
+    isPreviewing: false,
     sections,
-    productData,
+    productData: {},
     headerData,
     footerData,
-    toggleEditing,
-    togglePreviewing,
-    updateSections,
-    updateProductData,
-    updateHeaderData,
-    updateFooterData,
-    saveChanges,
-    publishChanges
+    toggleEditing: noop,
+    togglePreviewing: noop,
+    updateSections: noop,
+    updateSectionOrder: noop,
+    toggleSectionVisibility: noop,
+    updateProductData: noop,
+    updateHeaderData: noop,
+    updateFooterData: noop,
+    saveChanges: noopAsync,
+    publishChanges: noopAsync,
   };
-
-  return (
-    <EditorContext.Provider value={value}>
-      {children}
-    </EditorContext.Provider>
-  );
+  return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;
 };
 
 export const useEditor = () => {
-  const context = useContext(EditorContext);
-  if (context === undefined) {
-    throw new Error('useEditor must be used within an EditorProvider');
-  }
-  return context;
+  const ctx = useContext(EditorContext);
+  if (!ctx) throw new Error('useEditor must be used within EditorProvider');
+  return ctx;
 };
