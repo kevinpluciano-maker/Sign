@@ -102,7 +102,7 @@ const ModernContact = () => {
       // Backend URL - use env variable or fallback to Emergent backend
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 
                          import.meta.env.REACT_APP_BACKEND_URL || 
-                         'https://codebrowser-1.preview.emergentagent.com';
+                         'https://checkout-flow-176.preview.emergentagent.com';
       console.log('Submitting contact form to:', backendUrl);
 
       const response = await fetch(

@@ -81,7 +81,7 @@ Once your backend is on Railway/Render with the new URL, update:
 
 Change:
 ```typescript
-const BACKEND_URL = 'https://codebrowser-1.preview.emergentagent.com';
+const BACKEND_URL = 'https://checkout-flow-176.preview.emergentagent.com';
 ```
 
 To:
