@@ -575,8 +575,3 @@ export const ProductManager = () => {
     </Card>
   );
 };
-tent>
-      </Dialog>
-    </Card>
-  );
-};
