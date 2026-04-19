@@ -211,44 +211,107 @@ async def get_checkout_status(session_id: str, request: Request):
 
 @payment_router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
-    """Handle Stripe webhook events"""
+    """
+    Bulletproof Stripe webhook: verifies signature when STRIPE_WEBHOOK_SECRET is set,
+    fulfills the order in the DB on checkout.session.completed, sends emails,
+    and is idempotent via `stripe_events` collection.
+    """
+    body = await request.body()
+    signature = request.headers.get("Stripe-Signature", "")
+    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+
     try:
-        # Get raw body and signature
-        body = await request.body()
-        signature = request.headers.get("Stripe-Signature")
-        
-        # For now, just log the webhook - you can add webhook secret verification later
-        logger.info(f"Received Stripe webhook")
-        
-        # Parse the event
-        try:
-            event = stripe.Event.construct_from(
-                stripe.util.json.loads(body), stripe.api_key
+        if webhook_secret:
+            event = stripe.Webhook.construct_event(
+                payload=body, sig_header=signature, secret=webhook_secret
             )
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail="Invalid payload")
-        
-        # Handle the event
-        if event.type == "checkout.session.completed":
-            session = event.data.object
-            
-            await get_db().payment_transactions.update_one(
-                {"session_id": session.id},
+        else:
+            # No secret configured — trust the payload (dev/preview only). Log a warning.
+            import json as _json
+            event = stripe.Event.construct_from(_json.loads(body), stripe.api_key)
+            logger.warning("STRIPE_WEBHOOK_SECRET not set — accepting unverified webhook")
+    except stripe.error.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    except Exception as e:
+        logger.error(f"Webhook parse error: {e}")
+        raise HTTPException(status_code=400, detail="Invalid payload")
+
+    db = get_db()
+
+    # Normalize: stripe.Webhook.construct_event returns a Stripe object whose keys may not
+    # behave like plain dicts with .get(); convert to plain dict via attribute/fallback.
+    try:
+        event_id = event["id"] if hasattr(event, "__getitem__") else getattr(event, "id", None)
+    except Exception:
+        event_id = getattr(event, "id", None)
+    if not event_id:
+        raise HTTPException(status_code=400, detail="Missing event id")
+
+    # Idempotency check
+    already = await db.stripe_events.find_one({"id": event_id})
+    if already:
+        return {"status": "already_processed", "event_id": event_id}
+    event_type = event["type"] if hasattr(event, "__getitem__") else getattr(event, "type", "")
+    await db.stripe_events.insert_one(
+        {"id": event_id, "type": event_type, "received_at": datetime.utcnow()}
+    )
+
+    if event_type == "checkout.session.completed":
+        session = event["data"]["object"] if hasattr(event, "__getitem__") else event.data.object
+        session_id = session["id"] if hasattr(session, "__getitem__") else session.id
+        customer_email = (
+            (session.get("customer_details") or {}).get("email")
+            or session.get("customer_email")
+            or ""
+        )
+        amount_total = (session.get("amount_total") or 0) / 100.0
+        currency = (session.get("currency") or "cad").upper()
+
+        # Update payment_transactions
+        await db.payment_transactions.update_one(
+            {"session_id": session_id},
+            {
+                "$set": {
+                    "payment_status": session.get("payment_status"),
+                    "status": "complete",
+                    "updated_at": datetime.utcnow(),
+                }
+            },
+        )
+
+        # Create/upsert an Order record so admin dashboard sees it
+        order_doc = {
+            "order_id": session_id,
+            "customer_email": customer_email,
+            "customer_name": (session.get("customer_details") or {}).get("name", ""),
+            "amount": amount_total,
+            "total": f"{amount_total:.2f}",
+            "currency": currency,
+            "status": "paid",
+            "items": (session.get("metadata") or {}),
+            "timestamp": datetime.utcnow(),
+        }
+        await db.orders.update_one(
+            {"order_id": session_id}, {"$set": order_doc}, upsert=True
+        )
+
+        # Send emails (non-blocking internally)
+        try:
+            email_service.send_order_complete_notification(
                 {
-                    "$set": {
-                        "payment_status": session.payment_status,
-                        "status": "complete",
-                        "updated_at": datetime.utcnow()
-                    }
+                    "order_id": session_id,
+                    "customer_email": customer_email,
+                    "customer_name": order_doc["customer_name"],
+                    "amount": amount_total,
+                    "currency": currency,
                 }
             )
-            logger.info(f"✅ Webhook processed for session {session.id}")
-        
-        return {"status": "success"}
-        
-    except Exception as e:
-        logger.error(f"❌ Error processing webhook: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            logger.error(f"Order email failed: {e}")
+
+        logger.info(f"✅ Webhook fulfilled order for session {session_id}")
+
+    return {"status": "success", "event_id": event["id"]}
 
 
 @payment_router.get("/order/{session_id}")

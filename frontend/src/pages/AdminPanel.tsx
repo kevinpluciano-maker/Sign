@@ -4,6 +4,8 @@ import Header from '@/components/Header';
 import ImprovedFooter from '@/components/ImprovedFooter';
 import SimpleWYSIWYGEditor from '@/components/admin/SimpleWYSIWYGEditor';
 import { ProductManager } from '@/components/admin/ProductManager';
+import { MediaLibrary } from '@/components/admin/MediaLibrary';
+import { PricingManager } from '@/components/admin/PricingManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -11,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Lock, Settings, FileText, Home, Star, Trash2, Edit2, X, Check,
-  Package, LogOut, BarChart3,
+  Package, LogOut, BarChart3, Image as ImageIcon, Percent, CheckCircle2, EyeOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import SEO from '@/components/SEO';
@@ -269,21 +271,27 @@ const AdminPanel = () => {
           )}
 
           <Tabs defaultValue="products" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="products" data-testid="tab-products">
-                <Package className="h-4 w-4 mr-2" /> Products
+                <Package className="h-4 w-4 mr-1" /> Products
               </TabsTrigger>
               <TabsTrigger value="content" data-testid="tab-content">
-                <FileText className="h-4 w-4 mr-2" /> Content
+                <FileText className="h-4 w-4 mr-1" /> Content
+              </TabsTrigger>
+              <TabsTrigger value="media" data-testid="tab-media">
+                <ImageIcon className="h-4 w-4 mr-1" /> Media
+              </TabsTrigger>
+              <TabsTrigger value="pricing" data-testid="tab-pricing">
+                <Percent className="h-4 w-4 mr-1" /> Pricing
               </TabsTrigger>
               <TabsTrigger value="reviews" data-testid="tab-reviews">
-                <Star className="h-4 w-4 mr-2" /> Reviews
+                <Star className="h-4 w-4 mr-1" /> Reviews
               </TabsTrigger>
               <TabsTrigger value="orders" data-testid="tab-orders">
-                <BarChart3 className="h-4 w-4 mr-2" /> Orders
+                <BarChart3 className="h-4 w-4 mr-1" /> Orders
               </TabsTrigger>
               <TabsTrigger value="settings" data-testid="tab-settings">
-                <Settings className="h-4 w-4 mr-2" /> Settings
+                <Settings className="h-4 w-4 mr-1" /> Settings
               </TabsTrigger>
             </TabsList>
 
@@ -319,6 +327,16 @@ const AdminPanel = () => {
               </Card>
             </TabsContent>
 
+            {/* Media */}
+            <TabsContent value="media" className="mt-6">
+              <MediaLibrary />
+            </TabsContent>
+
+            {/* Pricing */}
+            <TabsContent value="pricing" className="mt-6">
+              <PricingManager />
+            </TabsContent>
+
             {/* Reviews */}
             <TabsContent value="reviews" className="mt-6">
               <Card>
@@ -326,19 +344,32 @@ const AdminPanel = () => {
                   <CardTitle className="flex items-center justify-between">
                     <span>Customer Reviews</span>
                     <span className="text-sm font-normal text-muted-foreground">
-                      {reviews.length} total
+                      {filteredReviews.length} / {reviews.length}
                     </span>
                   </CardTitle>
                   <CardDescription>
-                    Edit, feature, or delete customer reviews. Featured reviews can be highlighted on the homepage.
+                    Approve new reviews before they appear on the site. Hide inappropriate ones. Feature the best on the homepage.
                   </CardDescription>
+                  <div className="flex gap-2 mt-3" data-testid="review-filter-tabs">
+                    {(['all', 'approved', 'pending', 'hidden'] as const).map((f) => (
+                      <Button
+                        key={f}
+                        size="sm"
+                        variant={reviewFilter === f ? 'default' : 'outline'}
+                        onClick={() => setReviewFilter(f)}
+                        data-testid={`review-filter-${f}`}
+                      >
+                        {f.charAt(0).toUpperCase() + f.slice(1)}
+                      </Button>
+                    ))}
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  {reviews.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">No reviews yet</p>
+                  {filteredReviews.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No reviews in this filter</p>
                   ) : (
                     <div className="space-y-4">
-                      {reviews.map((review) => (
+                      {filteredReviews.map((review) => (
                         <div
                           key={review.id}
                           className="border rounded-lg p-4 bg-card"
@@ -391,9 +422,9 @@ const AdminPanel = () => {
                             </div>
                           ) : (
                             <div>
-                              <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-start justify-between mb-2 gap-2 flex-wrap">
                                 <div>
-                                  <div className="flex items-center gap-2 mb-1">
+                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                                     <span className="font-semibold">{review.author}</span>
                                     <div className="flex">
                                       {[1, 2, 3, 4, 5].map((s) => (
@@ -412,12 +443,43 @@ const AdminPanel = () => {
                                         Featured
                                       </span>
                                     )}
+                                    <span
+                                      className={`text-xs px-2 py-0.5 rounded ${
+                                        (review.status || 'approved') === 'approved'
+                                          ? 'bg-green-100 text-green-700'
+                                          : (review.status || 'approved') === 'pending'
+                                          ? 'bg-yellow-100 text-yellow-700'
+                                          : 'bg-gray-200 text-gray-700'
+                                      }`}
+                                    >
+                                      {(review.status || 'approved').toUpperCase()}
+                                    </span>
                                   </div>
                                   <p className="text-xs text-muted-foreground">
                                     {review.productName} • {review.date}
                                   </p>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-1 flex-wrap">
+                                  {(review.status || 'approved') !== 'approved' && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setReviewStatus(review, 'approved')}
+                                      data-testid={`approve-review-${review.id}`}
+                                    >
+                                      <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
+                                    </Button>
+                                  )}
+                                  {(review.status || 'approved') !== 'hidden' && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setReviewStatus(review, 'hidden')}
+                                      title="Hide from public"
+                                    >
+                                      <EyeOff className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                   <Button
                                     size="sm"
                                     variant="outline"

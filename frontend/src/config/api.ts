@@ -39,8 +39,15 @@ export const API_ENDPOINTS = {
     contentById: (id: string) => `${BACKEND_URL}/api/admin/content/${id}`,
     products: `${BACKEND_URL}/api/admin/products`,
     productById: (id: string) => `${BACKEND_URL}/api/admin/products/${id}`,
+    productsBulkImport: `${BACKEND_URL}/api/admin/products/bulk-import`,
     orders: `${BACKEND_URL}/api/admin/orders`,
+    media: `${BACKEND_URL}/api/admin/media`,
+    mediaUpload: `${BACKEND_URL}/api/admin/media/upload`,
+    mediaById: (id: string) => `${BACKEND_URL}/api/admin/media/${id}`,
+    pricing: `${BACKEND_URL}/api/admin/pricing`,
   },
+  // Public pricing (banners, promos, global %)
+  pricing: `${BACKEND_URL}/api/pricing`,
 };
 
 export default BACKEND_URL;

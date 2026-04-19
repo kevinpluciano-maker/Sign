@@ -8,7 +8,7 @@ import pytest
 import requests
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://checkout-flow-176.preview.emergentagent.com").rstrip("/")
-ADMIN_EMAIL = "kevinpluciano@gmail.com"
+ADMIN_EMAIL = "kevin@decalmax.ca"
 ADMIN_PASSWORD = "Ke34023616@"
 
 

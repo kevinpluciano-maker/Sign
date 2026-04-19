@@ -14,10 +14,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Plus, Trash2, Edit2, Package, Eye, EyeOff, Star } from 'lucide-react';
+import { Plus, Trash2, Edit2, Package, Eye, EyeOff, Star, Upload, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api';
 import { API_ENDPOINTS } from '@/config/api';
+import { MediaLibrary } from '@/components/admin/MediaLibrary';
 
 interface Product {
   id: string;
@@ -177,6 +178,83 @@ export const ProductManager = () => {
     }
   };
 
+  const importCatalog = async () => {
+    if (!confirm(
+      'Import hardcoded products from src/data/productsData.ts + bestSellersProducts.ts into MongoDB?\n\nSafe to run multiple times — existing products with matching IDs are updated, not duplicated.'
+    )) return;
+    setImporting(true);
+    try {
+      const [{ productsData }, { bestSellersProducts }] = await Promise.all([
+        import('@/data/productsData'),
+        import('@/data/bestSellersProducts'),
+      ]);
+      // Flatten productsData (record of category -> array)
+      const flat: any[] = [];
+      Object.entries(productsData as Record<string, any[]>).forEach(([cat, arr]) => {
+        arr.forEach((p) => {
+          flat.push({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            category: p.category || cat,
+            description: p.description || '',
+            image: p.image || '',
+            images: p.gallery || [],
+            materials: p.materials || [],
+            features: p.badges || [],
+            color_options: p.colorOptions || [],
+            braille_options: p.brailleOptions || [],
+            size_options: (p.sizeOptions || []).map((s: any) => ({ size: s.size, price: s.price })),
+            badges: p.badges || [],
+            rating: p.rating || 5,
+            review_count: p.reviews || 0,
+            in_stock: true,
+            published: true,
+            featured: false,
+            slug: p.slug,
+          });
+        });
+      });
+      // Merge bestSellers (by id) — skip duplicates
+      (bestSellersProducts as any[]).forEach((b) => {
+        if (!flat.find((x) => x.id === b.id)) {
+          flat.push({
+            id: b.id,
+            name: b.name,
+            price: `$${b.price}`,
+            category: 'best-sellers',
+            description: b.description || '',
+            image: b.image || '',
+            images: [],
+            materials: b.materials || [],
+            features: b.features || [],
+            color_options: b.colors || [],
+            braille_options: [],
+            size_options: [],
+            badges: [],
+            rating: b.rating || 5,
+            review_count: b.reviewCount || 0,
+            in_stock: true,
+            published: true,
+            featured: !!b.isNew,
+          });
+        }
+      });
+      const result = await apiFetch<{ imported: number; updated: number; total: number }>(
+        API_ENDPOINTS.admin.productsBulkImport,
+        { method: 'POST', auth: true, json: flat }
+      );
+      toast.success(
+        `Imported ${result.imported} new + updated ${result.updated} (${result.total} total)`
+      );
+      load();
+    } catch (e: any) {
+      toast.error('Import failed: ' + e.message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <Card data-testid="product-manager-card">
       <CardHeader>
@@ -191,6 +269,16 @@ export const ProductManager = () => {
           </div>
           <Button onClick={openNew} data-testid="new-product-btn">
             <Plus className="h-4 w-4 mr-2" /> New Product
+          </Button>
+          <Button
+            onClick={importCatalog}
+            disabled={importing}
+            variant="outline"
+            className="ml-2"
+            data-testid="import-catalog-btn"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {importing ? 'Importing…' : 'Import Existing Catalog'}
           </Button>
         </div>
       </CardHeader>
@@ -339,12 +427,22 @@ export const ProductManager = () => {
             </div>
             <div>
               <Label>Main Image URL</Label>
-              <Input
-                placeholder="https://... or /lovable-uploads/..."
-                value={editing.image || ''}
-                onChange={(e) => setEditing((x) => ({ ...x, image: e.target.value }))}
-                data-testid="product-image-input"
-              />
+              <div className="flex gap-2">
+                <Input
+                  placeholder="https://... or /lovable-uploads/..."
+                  value={editing.image || ''}
+                  onChange={(e) => setEditing((x) => ({ ...x, image: e.target.value }))}
+                  data-testid="product-image-input"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPickerOpen('main')}
+                  data-testid="pick-main-image-btn"
+                >
+                  <ImageIcon className="h-4 w-4 mr-1" /> Pick
+                </Button>
+              </div>
               {editing.image && (
                 <img
                   src={editing.image}
@@ -457,6 +555,27 @@ export const ProductManager = () => {
             </Button>
           </DialogFooter>
         </DialogContent>
+      </Dialog>
+
+      {/* Media picker modal */}
+      <Dialog open={!!pickerOpen} onOpenChange={(v) => !v && setPickerOpen(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Pick an image from Media Library</DialogTitle>
+          </DialogHeader>
+          <MediaLibrary
+            pickerMode
+            onPick={(url) => {
+              setEditing((x) => ({ ...x, image: url }));
+              setPickerOpen(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+};
+tent>
       </Dialog>
     </Card>
   );

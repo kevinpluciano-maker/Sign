@@ -19,12 +19,12 @@ resend.api_key = os.environ.get('RESEND_API_KEY', '')
 class EmailService:
     def __init__(self):
         self.sender_email = "orders@acrylicbraillesigns.com"
-        # Resend only allows sending to verified email until domain is verified
-        # Using the Resend account email (kevinpluciano@gmail.com)
+        # Admin/business notification inbox
         self.notification_emails = [
-            "kevinpluciano@gmail.com"  # Your Resend verified email
+            os.environ.get("NOTIFICATION_EMAIL", "kevinpluciano@gmail.com")
         ]
-        self.from_email = "Acrylic Braille Signs <onboarding@resend.dev>"
+        # Domain verified on Resend -> send from our own domain
+        self.from_email = "Acrylic Braille Signs <orders@acrylicbraillesigns.com>"
     
     def _send_email_async(self, to_emails: list, subject: str, body_html: str):
         """Send email using Resend API in background thread"""
@@ -342,19 +342,40 @@ class EmailService:
             </html>
             """
             
-            # Send to business owner (your verified Resend email)
+            # Send to business owner
             self.send_notification_email(subject, body_html)
-            
-            # Note: Customer confirmation emails disabled until domain is verified on Resend
-            # Once you verify your domain at resend.com/domains, uncomment below:
-            # if order_data.get('customer_email'):
-            #     self.send_email(order_data.get('customer_email'), customer_subject, customer_html)
-            
+
+            # Send confirmation to the customer (domain now verified)
+            customer_email = order_data.get("customer_email")
+            if customer_email:
+                customer_subject = f"Your Acrylic Braille Signs Order Confirmation — #{order_data.get('order_id', '')}"
+                self.send_email(customer_email, customer_subject, body_html)
+
             return True
             
         except Exception as e:
             logger.error(f"❌ Error sending order complete notification: {str(e)}")
             return True  # Don't fail checkout
+
+    # Compat aliases used by server.py /api/orders/notify
+    def send_order_notification(self, order_data: Dict[str, Any]) -> bool:
+        return self.send_pre_order_notification(order_data)
+
+    def send_customer_confirmation(self, order_data: Dict[str, Any]) -> bool:
+        customer_email = order_data.get("customer_email")
+        if not customer_email:
+            return False
+        subject = f"We received your order — #{order_data.get('order_id', '')}"
+        html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
+          <h2>Thank you for your order!</h2>
+          <p>Hi {order_data.get('customer_name', '')}, we received your order <strong>#{order_data.get('order_id', '')}</strong> and are processing it now.</p>
+          <p>Total: <strong>${order_data.get('total', '')}</strong></p>
+          <p>We'll send another email with shipping details once your order ships.</p>
+          <p>— Acrylic Braille Signs</p>
+        </div>
+        """
+        return self.send_email(customer_email, subject, html)
 
 # Create singleton instance
 email_service = EmailService()

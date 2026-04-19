@@ -151,3 +151,31 @@ async def delete_product(product_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Product not found")
     return {"status": "success", "message": "Product deleted"}
+
+
+class BulkImportProduct(ProductBase):
+    id: Optional[str] = None  # use provided id for idempotency
+
+
+@admin_product_router.post("/bulk-import")
+async def bulk_import_products(items: List[BulkImportProduct]):
+    """One-time (or repeatable) import. Upserts by `id` if provided, otherwise by slug."""
+    db = get_db()
+    now = datetime.now(timezone.utc).isoformat()
+    imported = 0
+    updated = 0
+    for item in items:
+        doc = item.dict()
+        pid = doc.pop("id", None) or str(uuid.uuid4())
+        doc["id"] = pid
+        doc["slug"] = doc.get("slug") or _slugify(doc["name"])
+        doc["updated_at"] = now
+        existing = await db.products.find_one({"id": pid})
+        if existing:
+            await db.products.update_one({"id": pid}, {"$set": doc})
+            updated += 1
+        else:
+            doc["created_at"] = now
+            await db.products.insert_one(doc)
+            imported += 1
+    return {"imported": imported, "updated": updated, "total": imported + updated}

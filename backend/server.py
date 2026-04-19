@@ -22,6 +22,8 @@ from payment_routes import payment_router
 from auth_routes import auth_router, seed_admin
 from admin_routes import admin_router
 from product_routes import public_product_router, admin_product_router
+from media_routes import public_media_router, admin_media_router, init_storage
+from pricing_routes import public_pricing_router, admin_pricing_router
 
 
 # Create the main app without a prefix
@@ -238,7 +240,7 @@ async def submit_review(review_data: ReviewData):
     try:
         review_dict = review_data.dict()
         review_dict["id"] = str(uuid.uuid4())
-        review_dict["status"] = "approved"
+        review_dict["status"] = "pending"  # requires admin approval before showing publicly
         review_dict["helpful"] = 0
         review_dict["verified"] = False
         review_dict["featured"] = False
@@ -256,7 +258,7 @@ async def get_product_reviews(product_id: str):
     db = get_db()
     try:
         reviews = await db.reviews.find(
-            {"productId": product_id, "status": {"$ne": "hidden"}},
+            {"productId": product_id, "status": "approved"},
             {"_id": 0, "email": 0, "created_at": 0, "timestamp": 0, "status": 0},
         ).sort("created_at", -1).to_list(100)
         if reviews:
@@ -291,6 +293,10 @@ app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(public_product_router)
 app.include_router(admin_product_router)
+app.include_router(public_media_router)
+app.include_router(admin_media_router)
+app.include_router(public_pricing_router)
+app.include_router(admin_pricing_router)
 app.include_router(payment_router)
 
 # GZip
@@ -339,7 +345,11 @@ async def on_startup():
             await db.users.create_index("email", unique=True)
             await db.products.create_index("id", unique=True)
             await db.content_sections.create_index("section_id", unique=True)
+            await db.media_files.create_index("id", unique=True)
+            await db.stripe_events.create_index("id", unique=True)
             await seed_admin()
+            # Initialize Emergent object storage (non-blocking — media endpoints handle failure)
+            init_storage()
             logger.info("Startup bootstrap complete")
         except Exception as e:
             logger.error(f"Startup bootstrap failed (app will still run): {e}")
