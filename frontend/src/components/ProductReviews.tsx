@@ -44,9 +44,7 @@ const ProductReviews = ({
   const [hoverRating, setHoverRating] = useState(0);
 
   // Backend URL - use env variable or fallback to Emergent backend
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 
-                      import.meta.env.REACT_APP_BACKEND_URL || 
-                      'https://checkout-flow-176.preview.emergentagent.com';
+  const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL as string) || 'https://bsign-backend.onrender.com';
 
   useEffect(() => {
     fetchReviews();

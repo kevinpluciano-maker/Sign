@@ -79,9 +79,7 @@ const CustomSizeRequest = ({ productName }: CustomSizeRequestProps) => {
       };
 
       // Backend URL - use env variable or fallback to Emergent backend
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 
-                         import.meta.env.REACT_APP_BACKEND_URL || 
-                         'https://checkout-flow-176.preview.emergentagent.com';
+      const backendUrl = (await import('@/config/api')).BACKEND_URL;
 
       const response = await fetch(
         `${backendUrl}/api/contact`,

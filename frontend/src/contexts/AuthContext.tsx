@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiFetch, getAuthToken, setAuthToken, clearAuthToken } from '@/lib/api';
+import { API_ENDPOINTS } from '@/config/api';
 
 interface User {
   id: string;
@@ -15,89 +17,60 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => void;
   loading: boolean;
+  error: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Hardcoded admin credentials for seeding
-const ADMIN_EMAIL = 'kevinpluciano@gmail.com';
-const ADMIN_PASSWORD_HASH = 'hashed_Ke34023616@'; // In real app, this would be properly hashed
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // On mount: if token exists, verify with backend and fetch user
   useEffect(() => {
-    // Check for stored auth state
-    const storedUser = localStorage.getItem('auth_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        localStorage.removeItem('auth_user');
-      }
+    const token = getAuthToken();
+    if (!token) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+    apiFetch<User>(API_ENDPOINTS.me, { auth: true })
+      .then((u) => setUser(u))
+      .catch(() => {
+        clearAuthToken();
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    setError(null);
     setLoading(true);
-    
     try {
-      // Simple auth logic - in real app this would call an API
-      if (email === ADMIN_EMAIL && password === 'Ke34023616@') {
-        const adminUser: User = {
-          id: 'admin-1',
-          email: ADMIN_EMAIL,
-          name: 'Kevin Pluciano',
-          role: 'admin'
-        };
-        setUser(adminUser);
-        localStorage.setItem('auth_user', JSON.stringify(adminUser));
-        return true;
-      } else {
-        // For demo purposes, allow any other email/password as regular user
-        const regularUser: User = {
-          id: 'user-' + Date.now(),
-          email,
-          name: email.split('@')[0],
-          role: 'user'
-        };
-        setUser(regularUser);
-        localStorage.setItem('auth_user', JSON.stringify(regularUser));
-        return true;
-      }
-    } catch (error) {
+      const data = await apiFetch<{ token: string; user: User }>(API_ENDPOINTS.login, {
+        method: 'POST',
+        json: { email: email.toLowerCase().trim(), password },
+      });
+      setAuthToken(data.token);
+      setUser(data.user);
+      return true;
+    } catch (e: any) {
+      setError(e.message || 'Login failed');
       return false;
     } finally {
       setLoading(false);
     }
   };
 
-  const register = async (email: string, password: string, name: string): Promise<boolean> => {
-    setLoading(true);
-    
-    try {
-      // Simple registration - in real app this would call an API
-      const newUser: User = {
-        id: 'user-' + Date.now(),
-        email,
-        name,
-        role: 'user'
-      };
-      setUser(newUser);
-      localStorage.setItem('auth_user', JSON.stringify(newUser));
-      return true;
-    } catch (error) {
-      return false;
-    } finally {
-      setLoading(false);
-    }
+  const register = async (_email: string, _password: string, _name: string): Promise<boolean> => {
+    // Public signup not supported in this admin-only auth system.
+    setError('Registration is disabled. Please contact the administrator.');
+    return false;
   };
 
   const logout = () => {
+    clearAuthToken();
     setUser(null);
-    localStorage.removeItem('auth_user');
   };
 
   const value: AuthContextType = {
@@ -107,20 +80,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     register,
     logout,
-    loading
+    loading,
+    error,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  return ctx;
 };

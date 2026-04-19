@@ -1,15 +1,12 @@
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 from typing import Optional, Dict
-from motor.motor_asyncio import AsyncIOMotorClient
 import stripe
 import os
-from dotenv import load_dotenv
 from datetime import datetime
 import logging
 from email_service import EmailService
-
-load_dotenv()
+from db import get_db
 
 # Initialize email service
 email_service = EmailService()
@@ -17,16 +14,14 @@ email_service = EmailService()
 # Initialize router
 payment_router = APIRouter(prefix="/api/payments", tags=["payments"])
 
-# MongoDB connection
-mongo_url = os.environ.get('MONGO_URL')
-db_name = os.environ.get('DB_NAME')
-client = AsyncIOMotorClient(mongo_url)
-db = client[db_name]
-payment_transactions = db['payment_transactions']
+# Stripe API Key (read lazily at first use)
+def _get_stripe_key():
+    key = os.environ.get('STRIPE_API_KEY')
+    if key:
+        stripe.api_key = key
+    return key
 
-# Stripe API Key
-STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
-stripe.api_key = STRIPE_API_KEY
+_get_stripe_key()
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +107,7 @@ async def create_checkout_session(payment_request: PaymentRequest):
             "updated_at": datetime.utcnow()
         }
         
-        await payment_transactions.insert_one(transaction_data)
+        await get_db().payment_transactions.insert_one(transaction_data)
         
         logger.info(f"✅ Created checkout session: {session.id}")
         
@@ -160,7 +155,7 @@ async def get_checkout_status(session_id: str, request: Request):
         status = session.status  # 'open', 'complete', 'expired'
         
         # Update transaction in database
-        existing_transaction = await payment_transactions.find_one({"session_id": session_id})
+        existing_transaction = await get_db().payment_transactions.find_one({"session_id": session_id})
         
         if existing_transaction:
             # Only update if payment_status has changed to avoid duplicate processing
@@ -171,7 +166,7 @@ async def get_checkout_status(session_id: str, request: Request):
                     "updated_at": datetime.utcnow()
                 }
                 
-                await payment_transactions.update_one(
+                await get_db().payment_transactions.update_one(
                     {"session_id": session_id},
                     {"$set": update_data}
                 )
@@ -237,7 +232,7 @@ async def stripe_webhook(request: Request):
         if event.type == "checkout.session.completed":
             session = event.data.object
             
-            await payment_transactions.update_one(
+            await get_db().payment_transactions.update_one(
                 {"session_id": session.id},
                 {
                     "$set": {
@@ -260,7 +255,7 @@ async def stripe_webhook(request: Request):
 async def get_order_details(session_id: str):
     """Get order details by session ID"""
     try:
-        transaction = await payment_transactions.find_one({"session_id": session_id})
+        transaction = await get_db().payment_transactions.find_one({"session_id": session_id})
         
         if not transaction:
             raise HTTPException(status_code=404, detail="Order not found")

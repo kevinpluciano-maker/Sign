@@ -3,14 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import ImprovedFooter from '@/components/ImprovedFooter';
 import SimpleWYSIWYGEditor from '@/components/admin/SimpleWYSIWYGEditor';
+import { ProductManager } from '@/components/admin/ProductManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Lock, Settings, FileText, Image as ImageIcon, Home, Star, Trash2, Edit2, X, Check } from 'lucide-react';
+import {
+  Lock, Settings, FileText, Home, Star, Trash2, Edit2, X, Check,
+  Package, LogOut, BarChart3,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import SEO from '@/components/SEO';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiFetch } from '@/lib/api';
+import { API_ENDPOINTS } from '@/config/api';
 
 interface ContentSection {
   id: string;
@@ -32,215 +39,186 @@ interface Review {
   date: string;
   verified: boolean;
   helpful: number;
+  featured?: boolean;
+  status?: string;
 }
+
+const DEFAULT_SECTIONS: ContentSection[] = [
+  {
+    id: 'hero-title',
+    name: 'Hero Section Title',
+    content: '<h1>Professional Acrylic Braille Signs</h1>',
+    fontSize: '48px',
+    fontFamily: 'Inter',
+  },
+  {
+    id: 'hero-description',
+    name: 'Hero Section Description',
+    content: '<p>Professional quality door signs, restroom signs, and custom architectural signage for modern workspaces.</p>',
+    fontSize: '20px',
+    fontFamily: 'Inter',
+  },
+  {
+    id: 'about-content',
+    name: 'About Page Content',
+    content: '<p>We specialize in creating high-quality ADA compliant signage solutions.</p>',
+    fontSize: '16px',
+    fontFamily: 'Inter',
+  },
+  {
+    id: 'footer-description',
+    name: 'Footer Description',
+    content: '<p>Premium acrylic braille signs and ADA compliant signage solutions.</p>',
+    fontSize: '14px',
+    fontFamily: 'Inter',
+  },
+];
 
 const AdminPanel = () => {
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [sections, setSections] = useState<ContentSection[]>([]);
+  const { user, isAdmin, loading: authLoading, logout } = useAuth();
+  const [sections, setSections] = useState<ContentSection[]>(DEFAULT_SECTIONS);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [editingReview, setEditingReview] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ title: '', content: '', rating: 0, author: '' });
-  
-  // Backend URL - use env variable or fallback to Emergent backend
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 
-                      import.meta.env.REACT_APP_BACKEND_URL || 
-                      'https://checkout-flow-176.preview.emergentagent.com';
+  const [stats, setStats] = useState<any>(null);
 
-  // Initialize sections from localStorage or defaults
+  // Route protection
   useEffect(() => {
-    // Simple authentication check (you can enhance this)
-    const adminAuth = localStorage.getItem('admin_authenticated');
-    if (!adminAuth) {
-      toast.error('Please log in to access the admin panel');
+    if (authLoading) return;
+    if (!user || !isAdmin) {
+      toast.error('Admin access required');
       navigate('/login');
-      return;
     }
+  }, [authLoading, user, isAdmin, navigate]);
 
-    setIsAuthenticated(true);
-    loadSections();
+  // Load data once authenticated
+  useEffect(() => {
+    if (!isAdmin) return;
+    loadContentSections();
     loadReviews();
-    setIsLoading(false);
-  }, [navigate]);
+    loadStats();
+  }, [isAdmin]);
 
-  // Load reviews from backend
+  const loadStats = async () => {
+    try {
+      const data = await apiFetch<any>(API_ENDPOINTS.admin.stats, { auth: true });
+      setStats(data);
+    } catch (e) {
+      /* non-critical */
+    }
+  };
+
+  const loadContentSections = async () => {
+    try {
+      const data = await apiFetch<{ sections: any[] }>(API_ENDPOINTS.admin.content, { auth: true });
+      const saved = data.sections || [];
+      const merged = DEFAULT_SECTIONS.map((def) => {
+        const found = saved.find((s) => s.section_id === def.id);
+        if (!found) return def;
+        return {
+          ...def,
+          content: found.content || def.content,
+          fontSize: found.font_size || def.fontSize,
+          fontFamily: found.font_family || def.fontFamily,
+        };
+      });
+      setSections(merged);
+    } catch (e: any) {
+      toast.error('Failed to load content: ' + e.message);
+    }
+  };
+
   const loadReviews = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/admin/reviews`);
-      if (response.ok) {
-        const data = await response.json();
-        setReviews(data.reviews || []);
-      }
-    } catch (error) {
-      console.error('Error loading reviews:', error);
-    }
-  };
-
-  // Delete review
-  const handleDeleteReview = async (reviewId: string) => {
-    if (!confirm('Are you sure you want to delete this review?')) return;
-    
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/admin/reviews/${reviewId}`, {
-        method: 'DELETE'
+      const data = await apiFetch<{ reviews: Review[] }>(API_ENDPOINTS.admin.reviews, {
+        auth: true,
       });
-      
-      if (response.ok) {
-        setReviews(prev => prev.filter(r => r.id !== reviewId));
-        toast.success('Review deleted successfully');
-      } else {
-        throw new Error('Failed to delete');
-      }
-    } catch (error) {
-      console.error('Error deleting review:', error);
-      toast.error('Failed to delete review');
+      setReviews(data.reviews || []);
+    } catch (e: any) {
+      toast.error('Failed to load reviews: ' + e.message);
     }
   };
 
-  // Start editing review
+  const handleSaveSection = async (sectionId: string, data: any) => {
+    try {
+      await apiFetch(API_ENDPOINTS.admin.contentById(sectionId), {
+        method: 'PUT',
+        auth: true,
+        json: {
+          content: data.content,
+          font_size: data.fontSize,
+          font_family: data.fontFamily,
+          plain_text: data.plainText,
+        },
+      });
+      setSections((prev) =>
+        prev.map((s) =>
+          s.id === sectionId
+            ? { ...s, content: data.content, fontSize: data.fontSize, fontFamily: data.fontFamily }
+            : s
+        )
+      );
+      toast.success('Content saved successfully');
+    } catch (e: any) {
+      toast.error('Save failed: ' + e.message);
+      throw e;
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!confirm('Delete this review permanently?')) return;
+    try {
+      await apiFetch(API_ENDPOINTS.admin.reviewById(reviewId), {
+        method: 'DELETE',
+        auth: true,
+      });
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      toast.success('Review deleted');
+    } catch (e: any) {
+      toast.error('Delete failed: ' + e.message);
+    }
+  };
+
   const startEditReview = (review: Review) => {
     setEditingReview(review.id);
     setEditForm({
       title: review.title,
       content: review.content,
       rating: review.rating,
-      author: review.author
+      author: review.author,
     });
   };
 
-  // Save edited review
   const handleSaveReview = async (reviewId: string) => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/admin/reviews/${reviewId}`, {
+      await apiFetch(API_ENDPOINTS.admin.reviewById(reviewId), {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm)
+        auth: true,
+        json: editForm,
       });
-      
-      if (response.ok) {
-        setReviews(prev => prev.map(r => 
-          r.id === reviewId ? { ...r, ...editForm } : r
-        ));
-        setEditingReview(null);
-        toast.success('Review updated successfully');
-      } else {
-        throw new Error('Failed to update');
-      }
-    } catch (error) {
-      console.error('Error updating review:', error);
-      toast.error('Failed to update review');
+      setReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, ...editForm } : r)));
+      setEditingReview(null);
+      toast.success('Review updated');
+    } catch (e: any) {
+      toast.error('Update failed: ' + e.message);
     }
   };
 
-  // Load sections from localStorage
-  const loadSections = () => {
-    const defaultSections: ContentSection[] = [
-      {
-        id: 'hero-title',
-        name: 'Hero Section Title',
-        content: '<h1>Professional Acrylic Braille Signs</h1>',
-        fontSize: '48px',
-        fontFamily: 'Inter'
-      },
-      {
-        id: 'hero-description',
-        name: 'Hero Section Description',
-        content: '<p>Professional quality door signs, restroom signs, and custom architectural signage for modern workspaces.</p>',
-        fontSize: '20px',
-        fontFamily: 'Inter'
-      },
-      {
-        id: 'about-content',
-        name: 'About Page Content',
-        content: '<p>We specialize in creating high-quality ADA compliant signage solutions.</p>',
-        fontSize: '16px',
-        fontFamily: 'Inter'
-      },
-      {
-        id: 'footer-description',
-        name: 'Footer Description',
-        content: '<p>Premium acrylic braille signs and ADA compliant signage solutions.</p>',
-        fontSize: '14px',
-        fontFamily: 'Inter'
-      }
-    ];
-
-    // Load from localStorage or use defaults
-    const loadedSections = defaultSections.map(section => {
-      const saved = localStorage.getItem(`wysiwyg_${section.id}`);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          return {
-            ...section,
-            content: parsed.content,
-            fontSize: parsed.fontSize,
-            fontFamily: parsed.fontFamily
-          };
-        } catch (e) {
-          console.error('Error loading section:', section.id, e);
-          return section;
-        }
-      }
-      return section;
-    });
-
-    setSections(loadedSections);
-  };
-
-  // Save section to backend (would be an API call in production)
-  const handleSaveSectionToBackend = async (sectionId: string, data: any) => {
+  const toggleFeatureReview = async (r: Review) => {
     try {
-      // In a real application, this would be an API call to save to database
-      // For now, we'll save to localStorage
-      const section = sections.find(s => s.id === sectionId);
-      if (!section) return;
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Update the backend
-      try {
-        const response = await fetch(`${BACKEND_URL}/api/content/${sectionId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            section_id: sectionId,
-            content: data.content,
-            font_size: data.fontSize,
-            font_family: data.fontFamily,
-            plain_text: data.plainText
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to save to backend');
-        }
-
-        console.log('Saved to backend successfully');
-      } catch (apiError) {
-        console.warn('Backend API not available, using localStorage only:', apiError);
-        // Fallback to localStorage only if backend is not available
-      }
-
-      // Update local state
-      setSections(prev => prev.map(s => 
-        s.id === sectionId 
-          ? { ...s, content: data.content, fontSize: data.fontSize, fontFamily: data.fontFamily }
-          : s
-      ));
-
-      toast.success('Content saved successfully!');
-    } catch (error) {
-      console.error('Error saving to backend:', error);
-      throw error;
+      await apiFetch(API_ENDPOINTS.admin.reviewById(r.id), {
+        method: 'PUT',
+        auth: true,
+        json: { featured: !r.featured },
+      });
+      setReviews((prev) => prev.map((x) => (x.id === r.id ? { ...x, featured: !x.featured } : x)));
+    } catch (e: any) {
+      toast.error('Toggle failed: ' + e.message);
     }
   };
 
-  if (isLoading) {
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -248,63 +226,79 @@ const AdminPanel = () => {
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  if (!user || !isAdmin) return null;
 
   return (
     <>
-      <SEO 
-        title="Admin Panel - AB Signs"
-        description="Admin panel for managing content"
-        noIndex={true}
-      />
+      <SEO title="Admin Panel - AB Signs" description="Admin panel" noIndex={true} />
       <div className="min-h-screen bg-background">
         <Header />
-        
-        <main className="container mx-auto px-4 py-8">
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-4xl font-bold mb-2">Admin Panel</h1>
-                <p className="text-muted-foreground">
-                  Manage your website content with the WYSIWYG editor
-                </p>
-              </div>
-              <Lock className="h-8 w-8 text-primary" />
+        <main className="container mx-auto px-4 py-8" data-testid="admin-panel">
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">Admin Portal</h1>
+              <p className="text-muted-foreground">
+                Signed in as <span className="font-medium">{user.email}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Lock className="h-6 w-6 text-primary" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  logout();
+                  toast.success('Logged out');
+                  navigate('/');
+                }}
+                data-testid="admin-logout-btn"
+              >
+                <LogOut className="h-4 w-4 mr-2" /> Log out
+              </Button>
             </div>
           </div>
 
-          <Tabs defaultValue="content" className="w-full">
+          {stats && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+              <StatCard label="Products" value={stats.products} />
+              <StatCard label="Reviews" value={stats.reviews} />
+              <StatCard label="Orders" value={stats.orders} />
+              <StatCard label="Subscribers" value={stats.newsletter_subscribers} />
+              <StatCard label="Inquiries" value={stats.contact_submissions} />
+            </div>
+          )}
+
+          <Tabs defaultValue="products" className="w-full">
             <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="content">
-                <FileText className="h-4 w-4 mr-2" />
-                Content
+              <TabsTrigger value="products" data-testid="tab-products">
+                <Package className="h-4 w-4 mr-2" /> Products
               </TabsTrigger>
-              <TabsTrigger value="homepage">
-                <Home className="h-4 w-4 mr-2" />
-                Homepage
+              <TabsTrigger value="content" data-testid="tab-content">
+                <FileText className="h-4 w-4 mr-2" /> Content
               </TabsTrigger>
-              <TabsTrigger value="reviews">
-                <Star className="h-4 w-4 mr-2" />
-                Reviews
+              <TabsTrigger value="reviews" data-testid="tab-reviews">
+                <Star className="h-4 w-4 mr-2" /> Reviews
               </TabsTrigger>
-              <TabsTrigger value="images">
-                <ImageIcon className="h-4 w-4 mr-2" />
-                Images
+              <TabsTrigger value="orders" data-testid="tab-orders">
+                <BarChart3 className="h-4 w-4 mr-2" /> Orders
               </TabsTrigger>
-              <TabsTrigger value="settings">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
+              <TabsTrigger value="settings" data-testid="tab-settings">
+                <Settings className="h-4 w-4 mr-2" /> Settings
               </TabsTrigger>
             </TabsList>
 
+            {/* Products */}
+            <TabsContent value="products" className="mt-6">
+              <ProductManager />
+            </TabsContent>
+
+            {/* Content */}
             <TabsContent value="content" className="space-y-6 mt-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Content Management</CardTitle>
                   <CardDescription>
-                    Edit text content across your website with rich formatting options
+                    Edit text content across your website. Changes save to the database and sync everywhere.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -317,7 +311,7 @@ const AdminPanel = () => {
                         initialContent={section.content}
                         initialFontSize={section.fontSize}
                         initialFontFamily={section.fontFamily}
-                        onSave={(data) => handleSaveSectionToBackend(section.id, data)}
+                        onSave={(data) => handleSaveSection(section.id, data)}
                       />
                     ))}
                   </div>
@@ -325,43 +319,18 @@ const AdminPanel = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="homepage" className="space-y-6 mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Homepage Sections</CardTitle>
-                  <CardDescription>
-                    Edit homepage specific content
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-8">
-                    {sections.filter(s => s.id.includes('hero')).map((section) => (
-                      <SimpleWYSIWYGEditor
-                        key={section.id}
-                        sectionId={section.id}
-                        sectionName={section.name}
-                        initialContent={section.content}
-                        initialFontSize={section.fontSize}
-                        initialFontFamily={section.fontFamily}
-                        onSave={(data) => handleSaveSectionToBackend(section.id, data)}
-                      />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="reviews" className="space-y-6 mt-6">
+            {/* Reviews */}
+            <TabsContent value="reviews" className="mt-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>Customer Reviews</span>
                     <span className="text-sm font-normal text-muted-foreground">
-                      {reviews.length} total reviews
+                      {reviews.length} total
                     </span>
                   </CardTitle>
                   <CardDescription>
-                    Manage customer reviews - edit or delete as needed
+                    Edit, feature, or delete customer reviews. Featured reviews can be highlighted on the homepage.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -370,18 +339,20 @@ const AdminPanel = () => {
                   ) : (
                     <div className="space-y-4">
                       {reviews.map((review) => (
-                        <div key={review.id} className="border rounded-lg p-4 bg-card">
+                        <div
+                          key={review.id}
+                          className="border rounded-lg p-4 bg-card"
+                          data-testid={`review-row-${review.id}`}
+                        >
                           {editingReview === review.id ? (
-                            // Edit Mode
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium">Rating:</span>
                                 <div className="flex gap-1">
                                   {[1, 2, 3, 4, 5].map((star) => (
                                     <button
                                       key={star}
-                                      onClick={() => setEditForm(prev => ({ ...prev, rating: star }))}
-                                      className="focus:outline-none"
+                                      onClick={() => setEditForm((x) => ({ ...x, rating: star }))}
                                     >
                                       <Star
                                         className={`h-5 w-5 ${
@@ -396,18 +367,17 @@ const AdminPanel = () => {
                               </div>
                               <Input
                                 value={editForm.author}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, author: e.target.value }))}
-                                placeholder="Author name"
+                                onChange={(e) => setEditForm((x) => ({ ...x, author: e.target.value }))}
+                                placeholder="Author"
                               />
                               <Input
                                 value={editForm.title}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                                placeholder="Review title"
+                                onChange={(e) => setEditForm((x) => ({ ...x, title: e.target.value }))}
+                                placeholder="Title"
                               />
                               <Textarea
                                 value={editForm.content}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, content: e.target.value }))}
-                                placeholder="Review content"
+                                onChange={(e) => setEditForm((x) => ({ ...x, content: e.target.value }))}
                                 rows={3}
                               />
                               <div className="flex gap-2">
@@ -420,30 +390,46 @@ const AdminPanel = () => {
                               </div>
                             </div>
                           ) : (
-                            // Display Mode
                             <div>
                               <div className="flex items-start justify-between mb-2">
                                 <div>
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="font-semibold">{review.author}</span>
                                     <div className="flex">
-                                      {[1, 2, 3, 4, 5].map((star) => (
+                                      {[1, 2, 3, 4, 5].map((s) => (
                                         <Star
-                                          key={star}
+                                          key={s}
                                           className={`h-4 w-4 ${
-                                            star <= review.rating
+                                            s <= review.rating
                                               ? 'fill-yellow-400 text-yellow-400'
                                               : 'text-gray-300'
                                           }`}
                                         />
                                       ))}
                                     </div>
+                                    {review.featured && (
+                                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                                        Featured
+                                      </span>
+                                    )}
                                   </div>
                                   <p className="text-xs text-muted-foreground">
                                     {review.productName} • {review.date}
                                   </p>
                                 </div>
                                 <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => toggleFeatureReview(review)}
+                                    title={review.featured ? 'Unfeature' : 'Feature'}
+                                  >
+                                    <Star
+                                      className={`h-4 w-4 ${
+                                        review.featured ? 'fill-yellow-400 text-yellow-400' : ''
+                                      }`}
+                                    />
+                                  </Button>
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -462,11 +448,6 @@ const AdminPanel = () => {
                               </div>
                               <h4 className="font-medium mb-1">{review.title}</h4>
                               <p className="text-sm text-muted-foreground">{review.content}</p>
-                              {review.email && (
-                                <p className="text-xs text-muted-foreground mt-2">
-                                  Email: {review.email}
-                                </p>
-                              )}
                             </div>
                           )}
                         </div>
@@ -477,39 +458,81 @@ const AdminPanel = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="images" className="space-y-6 mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Image Management</CardTitle>
-                  <CardDescription>
-                    Upload and manage images (Coming soon)
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">Image management features will be available soon.</p>
-                </CardContent>
-              </Card>
+            {/* Orders */}
+            <TabsContent value="orders" className="mt-6">
+              <OrdersTab />
             </TabsContent>
 
-            <TabsContent value="settings" className="space-y-6 mt-6">
+            {/* Settings */}
+            <TabsContent value="settings" className="mt-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>General Settings</CardTitle>
-                  <CardDescription>
-                    Configure global website settings (Coming soon)
-                  </CardDescription>
+                  <CardTitle>Settings</CardTitle>
+                  <CardDescription>Global configuration (coming soon)</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">General settings will be available soon.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Coming in next release: pricing rules, media library, staff accounts, theme colors.
+                  </p>
                 </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
         </main>
-
         <ImprovedFooter />
       </div>
     </>
+  );
+};
+
+const StatCard = ({ label, value }: { label: string; value: number }) => (
+  <Card>
+    <CardContent className="pt-6">
+      <div className="text-3xl font-bold">{value ?? 0}</div>
+      <div className="text-xs text-muted-foreground uppercase tracking-wide mt-1">{label}</div>
+    </CardContent>
+  </Card>
+);
+
+const OrdersTab = () => {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    apiFetch<{ orders: any[] }>(API_ENDPOINTS.admin.orders, { auth: true })
+      .then((d) => setOrders(d.orders || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Recent Orders ({orders.length})</CardTitle>
+        <CardDescription>Read-only view of orders captured by the backend</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <p className="text-muted-foreground">Loading…</p>
+        ) : orders.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">No orders yet</p>
+        ) : (
+          <div className="space-y-2">
+            {orders.map((o, i) => (
+              <div key={i} className="border rounded p-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="font-medium">
+                    {o.order_id || o.id} — {o.customer_name}
+                  </span>
+                  <span className="font-semibold">${o.total}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {o.customer_email} • {(o.items || []).length} items
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
