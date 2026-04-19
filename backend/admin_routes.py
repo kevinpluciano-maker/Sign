@@ -2,11 +2,12 @@
 Admin-protected routes: review moderation, content editing, settings.
 All endpoints require Bearer JWT with role=admin.
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 import logging
+import json
 
 from auth import require_admin
 from db import get_db
@@ -167,3 +168,90 @@ async def get_stats():
         "contact_submissions": await db.contact_submissions.count_documents({}),
     }
     return stats
+
+
+
+@admin_router.post("/import")
+async def import_database(file: UploadFile = File(...)):
+    """
+    Import data from JSON export file into production database.
+    Accepts collections: products, reviews, content_sections, pricing
+    """
+    db = get_db()
+    
+    # Validate file type
+    if not file.filename.endswith('.json'):
+        raise HTTPException(status_code=400, detail="Only JSON files are accepted")
+    
+    # Read and parse file
+    try:
+        content = await file.read()
+        data = json.loads(content)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON file")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {str(e)}")
+    
+    # Validate structure
+    if 'collections' not in data:
+        raise HTTPException(status_code=400, detail="Invalid export format: 'collections' key missing")
+    
+    collections = data['collections']
+    stats = {}
+    
+    # Import each collection
+    for collection_name, docs in collections.items():
+        if not docs:
+            stats[collection_name] = {'imported': 0, 'updated': 0, 'errors': 0}
+            continue
+        
+        collection = db[collection_name]
+        imported = 0
+        updated = 0
+        errors = 0
+        
+        for doc in docs:
+            try:
+                doc_id = doc.get('id')
+                if not doc_id:
+                    errors += 1
+                    continue
+                
+                # Check if exists
+                existing = await collection.find_one({"id": doc_id})
+                
+                if existing:
+                    # Update existing
+                    await collection.replace_one({"id": doc_id}, doc)
+                    updated += 1
+                else:
+                    # Insert new
+                    await collection.insert_one(doc)
+                    imported += 1
+            except Exception as e:
+                logger.error(f"Error importing doc to {collection_name}: {e}")
+                errors += 1
+        
+        stats[collection_name] = {
+            'imported': imported,
+            'updated': updated,
+            'errors': errors
+        }
+    
+    total_imported = sum(s['imported'] for s in stats.values())
+    total_updated = sum(s['updated'] for s in stats.values())
+    total_errors = sum(s['errors'] for s in stats.values())
+    
+    logger.info(f"Import complete: {total_imported} imported, {total_updated} updated, {total_errors} errors")
+    
+    return {
+        "success": True,
+        "message": f"Import complete: {total_imported} new items, {total_updated} updated",
+        "stats": stats,
+        "summary": {
+            "total_imported": total_imported,
+            "total_updated": total_updated,
+            "total_errors": total_errors
+        }
+    }
+

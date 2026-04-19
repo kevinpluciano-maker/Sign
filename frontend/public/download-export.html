@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Download Database Export</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        .download-btn {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .download-btn:hover {
+            background: #2563eb;
+        }
+        .info-box {
+            background: #e0f2fe;
+            padding: 15px;
+            border-left: 4px solid #3b82f6;
+            margin: 20px 0;
+        }
+        .step {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📥 Database Export - Download</h1>
+        
+        <div class="info-box">
+            <strong>Export Summary:</strong>
+            <ul>
+                <li>6 Products</li>
+                <li>10 Reviews</li>
+                <li>1 Content Section</li>
+                <li>File Size: 13.33 KB</li>
+            </ul>
+        </div>
+
+        <h2>Quick Download</h2>
+        <p>Click the button below to download the export file:</p>
+        <a href="#" class="download-btn" id="downloadBtn">⬇️ Download preview_db_export.json</a>
+
+        <h2>Then Import to Production</h2>
+        <div class="step">
+            <strong>Step 1:</strong> Save the downloaded file to your computer
+        </div>
+        <div class="step">
+            <strong>Step 2:</strong> Go to <code>https://www.acrylicbraillesigns.com/login</code>
+        </div>
+        <div class="step">
+            <strong>Step 3:</strong> Login with: <code>kevin@decalmax.ca</code>
+        </div>
+        <div class="step">
+            <strong>Step 4:</strong> Click "Admin" in the header
+        </div>
+        <div class="step">
+            <strong>Step 5:</strong> Click the "Import" tab
+        </div>
+        <div class="step">
+            <strong>Step 6:</strong> Click "Choose File" and select the downloaded JSON
+        </div>
+        <div class="step">
+            <strong>Step 7:</strong> Click "Import" button and wait for success message
+        </div>
+        <div class="step">
+            <strong>Step 8:</strong> Verify products are now visible in the Products tab!
+        </div>
+    </div>
+
+    <script>
+        // Inline the JSON data
+        const exportData = {"exported_at": "2026-04-19T13:24:30.827928", "source": "preview_database", "collections": {"products": [{"name": "Men Restroom Sign", "price": "$58.00", "category": "restroom-signs", "description": "Professional men's restroom sign with ADA compliance", "image": "/images/men-restroom-sign.jpg", "images": ["/images/men-restroom-sign.jpg", "/images/men-restroom-sign-2.jpg"], "materials": ["Premium Acrylic", "Raised Characters", "Braille Dots"], "features": ["ADA Compliant", "Weather Resistant", "Easy Installation"], "size_options": [{"size": "8x8in", "price": "$58.00"}, {"size": "10x10in", "price": "$65.00"}, {"size": "12x12in", "price": "$76.00"}], "color_options": ["Black on White", "White on Black", "Blue on White"], "braille_options": ["Yes", "No"], "badges": ["ADA Compliant", "Best Seller"], "rating": 4.8, "review_count": 15, "in_stock": true, "published": true, "featured": true, "slug": "men-restroom-sign", "id": "03c7e9c2-5cc8-4bce-b069-0871b570f782", "created_at": "2026-04-19T06:01:20.090300+00:00", "updated_at": "2026-04-19T06:01:20.090300+00:00"}, {"name": "Women Restroom Sign", "price": "$58.00", "category": "restroom-signs", "description": "Professional women's restroom sign with ADA compliance", "image": "/images/women-restroom-sign.jpg", "images": ["/images/women-restroom-sign.jpg", "/images/women-restroom-sign-2.jpg"], "materials": ["Premium Acrylic", "Raised Characters", "Braille Dots"], "features": ["ADA Compliant", "Weather Resistant", "Easy Installation"], "size_options": [{"size": "8x8in", "price": "$58.00"}, {"size": "10x10in", "price": "$65.00"}, {"size": "12x12in", "price": "$76.00"}], "color_options": ["Black on White", "White on Black", "Blue on White"], "braille_options": ["Yes", "No"], "badges": ["ADA Compliant", "Best Seller"], "rating": 4.9, "review_count": 12, "in_stock": true, "published": true, "featured": true, "slug": "women-restroom-sign", "id": "c22b83a4-0b28-464f-9721-21727677f278", "created_at": "2026-04-19T06:01:20.199371+00:00", "updated_at": "2026-04-19T06:01:20.199371+00:00"}, {"name": "Door Number Sign", "price": "from $45.00", "category": "door-number-signs", "description": "Custom door number sign with room numbering", "image": "/images/door-number-sign.jpg", "images": ["/images/door-number-sign.jpg"], "materials": ["Wood", "Stainless Steel"], "features": ["Custom Numbers", "Professional Look", "Durable"], "size_options": [{"size": "9.8x4.7in", "price": "$45.00"}, {"size": "12x6in", "price": "$55.00"}], "color_options": ["Natural Wood", "Dark Wood", "Brushed Steel"], "braille_options": ["Yes", "No"], "badges": ["Customizable"], "rating": 4.7, "review_count": 8, "in_stock": true, "published": true, "featured": false, "slug": "door-number-wood-stainless-steel", "id": "76836b58-0d17-4926-bc5b-22a6eed8bbd5", "created_at": "2026-04-19T06:01:20.304137+00:00", "updated_at": "2026-04-19T06:01:20.304137+00:00"}, {"name": "Door Number Sign (Copy)", "price": "from $45.00", "category": "door-number-signs", "description": "Custom door number sign with room numbering", "image": "/images/door-number-sign.jpg", "images": ["/images/door-number-sign.jpg"], "materials": ["Wood", "Stainless Steel"], "features": ["Custom Numbers", "Professional Look", "Durable"], "size_options": [{"size": "9.8x4.7in", "price": "$45.00"}, {"size": "12x6in", "price": "$55.00"}], "color_options": ["Natural Wood", "Dark Wood", "Brushed Steel"], "braille_options": ["Yes", "No"], "badges": ["Customizable"], "rating": 4.7, "review_count": 0, "in_stock": true, "published": false, "featured": false, "slug": "door-number-wood-stainless-steel-copy", "id": "facd2347-2abd-4124-8d1e-bf9bfefa51f6", "created_at": "2026-04-19T06:01:43.430014+00:00", "updated_at": "2026-04-19T06:01:43.430014+00:00"}, {"name": "Door Number Sign (Copy)", "price": "from $45.00", "category": "door-number-signs", "description": "Custom door number sign with room numbering", "image": "/images/door-number-sign.jpg", "images": ["/images/door-number-sign.jpg"], "materials": ["Wood", "Stainless Steel"], "features": ["Custom Numbers", "Professional Look", "Durable"], "size_options": [{"size": "9.8x4.7in", "price": "$45.00"}, {"size": "12x6in", "price": "$55.00"}], "color_options": ["Natural Wood", "Dark Wood", "Brushed Steel"], "braille_options": ["Yes", "No"], "badges": ["Customizable"], "rating": 4.7, "review_count": 0, "in_stock": true, "published": false, "featured": false, "slug": "door-number-wood-stainless-steel-copy-2", "id": "06b56d9b-71a9-4008-9959-606905009800", "created_at": "2026-04-19T06:01:43.573840+00:00", "updated_at": "2026-04-19T06:01:43.573840+00:00"}, {"name": "Door Number Sign (Copy) (Copy)", "price": "from $45.00", "category": "door-number-signs", "description": "Custom door number sign with room numbering", "image": "/images/door-number-sign.jpg", "images": ["/images/door-number-sign.jpg"], "materials": ["Wood", "Stainless Steel"], "features": ["Custom Numbers", "Professional Look", "Durable"], "size_options": [{"size": "9.8x4.7in", "price": "$45.00"}, {"size": "12x6in", "price": "$55.00"}], "color_options": ["Natural Wood", "Dark Wood", "Brushed Steel"], "braille_options": ["Yes", "No"], "badges": ["Customizable"], "rating": 4.7, "review_count": 0, "in_stock": true, "published": false, "featured": false, "slug": "door-number-wood-stainless-steel-copy-2-copy", "id": "86553d5b-fc2e-414d-af4e-3871484d4310", "created_at": "2026-04-19T06:02:32.666195+00:00", "updated_at": "2026-04-19T06:02:32.666195+00:00"}], "content_sections": [{"id": "ddaa750d-5d2d-4e91-8788-97802ca9d9cd", "section_id": "test-section-45287077", "content": "<h1>Test Content</h1><p>Regression test content</p>", "font_size": "16px", "font_family": "Arial", "plain_text": "Test Content - Regression test content", "timestamp": "2026-04-19T05:21:43.294000"}], "reviews": [{"productId": "men-restroom-sign", "productName": "Men Restroom Sign", "rating": 5, "title": "Excellent Quality - Regression Test", "content": "This is a regression test review to verify the review system works after performance optimization. The product quality is excellent.", "author": "Regression Tester", "email": "regression.reviewer@example.com", "timestamp": null, "id": "dcc9c2d1-ef18-44c7-b300-3c13f3a85a21", "status": "pending", "helpful": 0, "verified": false, "featured": false, "date": "April 19, 2026", "created_at": "2026-04-19T05:21:43.639145"}, {"id": "1a764bf5-72ee-43c6-b98f-26f68d525da3", "productId": "men-restroom-sign", "author": "Backend Regression Tester", "rating": 5, "title": "Love it", "content": "Great product", "status": "approved", "featured": true, "verified": true, "helpful": 0, "created_at": "2026-04-19T06:00:35.287650+00:00", "date": "2026-04-19T06:00:35.287650+00:00"}, {"id": "a68bf783-4c7d-4268-abf5-49a5d872fa8b", "productId": "men-restroom-sign", "author": "Clamp Tester", "rating": 5, "title": "", "content": "Testing rating clamp", "status": "approved", "featured": false, "verified": false, "helpful": 0, "created_at": "2026-04-19T06:00:35.579259+00:00", "date": "2026-04-19T06:00:35.579259+00:00"}, {"id": "7e60914b-d08f-4a1b-8dfe-08060c6e4f12", "productId": "men-restroom-sign", "author": "High Clamp Tester", "rating": 5, "title": "", "content": "Testing rating clamp", "status": "approved", "featured": false, "verified": false, "helpful": 0, "created_at": "2026-04-19T06:00:35.697809+00:00", "date": "2026-04-19T06:00:35.697809+00:00"}, {"id": "355a3f0e-c6c7-4e6c-92b6-944e39950249", "productId": "men-restroom-sign", "author": "Backend Regression Tester", "rating": 5, "title": "Love it", "content": "Great product", "status": "approved", "featured": true, "verified": true, "helpful": 0, "created_at": "2026-04-19T06:01:43.792973+00:00", "date": "2026-04-19T06:01:43.792973+00:00"}, {"id": "332ed385-ecd8-4167-81f8-e5f54770cd09", "productId": "men-restroom-sign", "author": "Clamp Tester", "rating": 1, "title": "", "content": "Testing rating clamp", "status": "approved", "featured": false, "verified": false, "helpful": 0, "created_at": "2026-04-19T06:01:44.025150+00:00", "date": "2026-04-19T06:01:44.025150+00:00"}, {"id": "52a0f563-6222-4445-9a3f-689a9af06566", "productId": "men-restroom-sign", "author": "High Clamp Tester", "rating": 5, "title": "", "content": "Testing rating clamp", "status": "approved", "featured": false, "verified": false, "helpful": 0, "created_at": "2026-04-19T06:01:44.131758+00:00", "date": "2026-04-19T06:01:44.131758+00:00"}, {"id": "92f8e0cf-65d1-493a-b104-097771e712d5", "productId": "men-restroom-sign", "author": "Backend Regression Tester", "rating": 5, "title": "Love it", "content": "Great product", "status": "approved", "featured": true, "verified": true, "helpful": 0, "created_at": "2026-04-19T06:02:32.786118+00:00", "date": "2026-04-19T06:02:32.786118+00:00"}, {"id": "f7a7dd2d-7692-42d2-b2d5-2fe9b7894971", "productId": "men-restroom-sign", "author": "Clamp Test 0", "rating": 1, "title": "Love it", "content": "Great product", "status": "approved", "featured": true, "verified": true, "helpful": 0, "created_at": "2026-04-19T06:02:32.895941+00:00", "date": "2026-04-19T06:02:32.895941+00:00"}, {"id": "cd87d991-6a30-47cb-81c8-12a92434da19", "productId": "men-restroom-sign", "author": "Clamp Test 99", "rating": 5, "title": "Love it", "content": "Great product", "status": "approved", "featured": true, "verified": true, "helpful": 0, "created_at": "2026-04-19T06:02:33.010170+00:00", "date": "2026-04-19T06:02:33.010170+00:00"}], "pricing": []}};
+        
+        document.getElementById('downloadBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'preview_db_export.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>

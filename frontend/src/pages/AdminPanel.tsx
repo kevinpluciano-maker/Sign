@@ -6,6 +6,7 @@ import SimpleWYSIWYGEditor from '@/components/admin/SimpleWYSIWYGEditor';
 import { ProductManager } from '@/components/admin/ProductManager';
 import { MediaLibrary } from '@/components/admin/MediaLibrary';
 import { PricingManager } from '@/components/admin/PricingManager';
+import { DatabaseImport } from '@/components/admin/DatabaseImport';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Lock, Settings, FileText, Home, Star, Trash2, Edit2, X, Check, Plus,
-  Package, LogOut, BarChart3, Image as ImageIcon, Percent, CheckCircle2, EyeOff,
+  Package, LogOut, BarChart3, Image as ImageIcon, Percent, CheckCircle2, EyeOff, Database,
 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -420,7 +421,7 @@ const AdminPanel = () => {
           )}
 
           <Tabs defaultValue="products" className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="products" data-testid="tab-products">
                 <Package className="h-4 w-4 mr-1" /> Products
               </TabsTrigger>
@@ -438,6 +439,9 @@ const AdminPanel = () => {
               </TabsTrigger>
               <TabsTrigger value="orders" data-testid="tab-orders">
                 <BarChart3 className="h-4 w-4 mr-1" /> Orders
+              </TabsTrigger>
+              <TabsTrigger value="import" data-testid="tab-import">
+                <Database className="h-4 w-4 mr-1" /> Import
               </TabsTrigger>
               <TabsTrigger value="settings" data-testid="tab-settings">
                 <Settings className="h-4 w-4 mr-1" /> Settings
@@ -703,6 +707,11 @@ const AdminPanel = () => {
             {/* Orders */}
             <TabsContent value="orders" className="mt-6">
               <OrdersTab />
+            </TabsContent>
+
+            {/* Import */}
+            <TabsContent value="import" className="mt-6">
+              <DatabaseImport />
             </TabsContent>
 
             {/* Settings */}
