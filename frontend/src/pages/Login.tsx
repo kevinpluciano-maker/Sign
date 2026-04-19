@@ -73,6 +73,7 @@ const Login = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       placeholder="your@email.com"
+                      data-testid="login-email-input"
                     />
                   </div>
                   
@@ -85,6 +86,7 @@ const Login = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       placeholder="Your password"
+                      data-testid="login-password-input"
                     />
                   </div>
                   
@@ -92,6 +94,7 @@ const Login = () => {
                     type="submit" 
                     className="w-full"
                     disabled={isLoading}
+                    data-testid="login-submit-btn"
                   >
                     {isLoading ? 'Signing In...' : 'Sign In'}
                   </Button>
