@@ -154,7 +154,7 @@ const SEO = ({
         ...(price && {
           offers: {
             "@type": "Offer",
-            price: price.replace(/[^0-9.]/g, ''),
+            price: String(price).replace(/[^0-9.]/g, ''),
             priceCurrency: "USD",
             availability: `https://schema.org/${availability || 'InStock'}`,
             url: canonicalUrl,
@@ -255,7 +255,7 @@ const SEO = ({
       {modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
       
       {/* Product specific meta tags */}
-      {price && <meta property="product:price:amount" content={price.replace(/[^0-9.]/g, '')} />}
+      {price && <meta property="product:price:amount" content={String(price).replace(/[^0-9.]/g, '')} />}
       {price && <meta property="product:price:currency" content="USD" />}
       {availability && <meta property="product:availability" content={availability} />}
       {brand && <meta property="product:brand" content={brand} />}

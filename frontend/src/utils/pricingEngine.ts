@@ -180,7 +180,7 @@ export const applyDiscountsToSizeOptions = (
   hasBraille: boolean
 ): { size: string; price: string; originalPrice: string; discountPercent: number }[] => {
   return sizeOptions.map(option => {
-    const originalPrice = parseFloat(option.price.replace(/[^0-9.]/g, ''));
+    const originalPrice = parseFloat(String(option.price).replace(/[^0-9.]/g, ''));
     const { discountedPrice, discountPercent } = calculateDiscountedPrice(
       originalPrice,
       option.size,

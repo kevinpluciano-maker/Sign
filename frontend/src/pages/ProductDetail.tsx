@@ -94,8 +94,8 @@ const ProductDetail = () => {
     id: foundProduct.id,
     name: foundProduct.name,
     images: foundProduct.gallery || [foundProduct.image],
-    price: parseFloat(foundProduct.price.replace(/[^0-9.]/g, '')),
-    originalPrice: foundProduct.originalPrice ? parseFloat(foundProduct.originalPrice.replace(/[^0-9.]/g, '')) : undefined,
+    price: parseFloat(String(foundProduct.price).replace(/[^0-9.]/g, '')),
+    originalPrice: foundProduct.originalPrice ? parseFloat(String(foundProduct.originalPrice).replace(/[^0-9.]/g, '')) : undefined,
     rating: foundProduct.rating,
     reviewCount: foundProduct.reviews,
     inStock: true,
@@ -157,7 +157,7 @@ const ProductDetail = () => {
   const sizeOptions = product.sizeOptions?.map((sizeOption, index) => ({
     name: sizeOption.size,
     value: `size-${index}`,
-    price: parseFloat(sizeOption.price.replace(/[^0-9.]/g, ''))
+    price: parseFloat(String(sizeOption.price).replace(/[^0-9.]/g, ''))
   })) || [
     { name: "Standard Size", value: "standard", price: product.price }
   ];

@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import premium fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+/* Premium fonts are loaded via <link> in index.html — no @import here
+   (duplicate @import was render-blocking and caused a Vite warning). */
 
 /* Smooth scrolling and mobile optimizations */
 html {
