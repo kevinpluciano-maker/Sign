@@ -6,7 +6,7 @@
 - Role: `admin`
 
 ## URLs
-- Backend (preview / dev pod external): `https://checkout-flow-176.preview.emergentagent.com`
+- Backend (preview / dev pod external): `https://coding-walkthrough.preview.emergentagent.com`
 - Backend (Render production): `https://bsign-backend.onrender.com`
 - MongoDB (dev pod): `mongodb://localhost:27017` / DB `bsign_store`
 
