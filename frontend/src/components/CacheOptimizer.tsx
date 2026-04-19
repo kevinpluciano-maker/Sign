@@ -41,12 +41,15 @@ export const CacheOptimizer = () => {
           const assetsToCache = [
             '/assets/hero-office.jpg',
             '/assets/signassist-logo.png',
-            '/assets/bsign-logo.png'
+            '/assets/acrylic-braille-logo.png'
           ];
-          
-          await cache.addAll(assetsToCache);
-        } catch (error) {
-          console.warn('Failed to cache static assets:', error);
+          // Individual cache.add() so one missing asset doesn't abort the whole batch.
+          // (cache.addAll is atomic — any single failure rejects the Promise.)
+          await Promise.allSettled(
+            assetsToCache.map(url => cache.add(url).catch(() => {}))
+          );
+        } catch {
+          /* Silent — asset caching is a progressive enhancement, not critical */
         }
       }
     };

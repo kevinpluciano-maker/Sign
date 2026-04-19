@@ -9,7 +9,7 @@ const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/assets/signassist-logo.png',
-  '/assets/bsign-logo.png',
+  '/assets/acrylic-braille-logo.png',
   '/manifest.json'
 ];
 
@@ -25,11 +25,12 @@ const CACHE_STRATEGIES = {
 self.addEventListener('install', (event) => {
   event.waitUntil(
     Promise.all([
-      // Cache static assets
-      caches.open(STATIC_CACHE).then(cache => {
-        return cache.addAll(STATIC_ASSETS);
-      }),
-      
+      // Cache static assets — each added individually so a missing file
+      // doesn't cause the whole install to fail.
+      caches.open(STATIC_CACHE).then(cache =>
+        Promise.allSettled(STATIC_ASSETS.map(url => cache.add(url).catch(() => {})))
+      ),
+
       // Skip waiting to activate immediately
       self.skipWaiting()
     ])

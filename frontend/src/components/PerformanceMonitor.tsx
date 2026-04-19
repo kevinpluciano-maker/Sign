@@ -30,10 +30,17 @@ export const PerformanceMonitor = () => {
 
     // Send metric to analytics
     const sendToAnalytics = (metric: WebVitalsMetric) => {
-      if (process.env.NODE_ENV === 'development') {
+      // Console logging disabled — was too noisy (fires 4× per metric due to
+      // multiple observers + StrictMode). Enable via localStorage flag if needed:
+      //   localStorage.setItem('debug:web-vitals', '1')
+      if (
+        typeof window !== 'undefined' &&
+        process.env.NODE_ENV === 'development' &&
+        window.localStorage?.getItem('debug:web-vitals') === '1'
+      ) {
         console.log(`${metric.name}: ${metric.value} (${metric.rating})`);
       }
-      
+
       // In production, send to your analytics service
       // Example: gtag('event', metric.name, { value: metric.value });
     };

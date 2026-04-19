@@ -9,9 +9,8 @@ const LiveChat = () => {
     const tawkToPropertyId = ''; // Get from tawk.to dashboard
     const tawkToKey = ''; // Get from tawk.to dashboard
     
-    // Only load if IDs are configured
+    // Only load if IDs are configured — silent no-op otherwise
     if (!tawkToPropertyId || !tawkToKey) {
-      console.log('Live chat not configured. Sign up at tawk.to and add your IDs to enable.');
       return;
     }
 

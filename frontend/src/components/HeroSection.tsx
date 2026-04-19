@@ -8,9 +8,10 @@ const HeroSection = () => {
   const [videoReady, setVideoReady] = useState(false);
   const [videoError, setVideoError] = useState(false);
 
-  // Video sources - CDN primary, local fallback
-  const VIDEO_CDN_URL = "https://customer-assets.emergentagent.com/job_codebrowser-1/artifacts/7ojfcx81_202509051609%20(1)%20(1).mp4";
+  // Video sources — local-first for reliability (eliminates ERR_NAME_NOT_RESOLVED
+   // when the preview CDN host is unreachable). CDN reserved as secondary fallback.
   const VIDEO_LOCAL_URL = "/hero-video.mp4";
+  const VIDEO_CDN_URL = "https://customer-assets.emergentagent.com/job_codebrowser-1/artifacts/7ojfcx81_202509051609%20(1)%20(1).mp4";
 
   useEffect(() => {
     const video = videoRef.current;
@@ -30,24 +31,21 @@ const HeroSection = () => {
         await new Promise(resolve => setTimeout(resolve, 100));
         await video.play();
         setVideoReady(true);
-        console.log('Hero video playing successfully');
       } catch (err) {
-        console.log('Initial autoplay blocked, setting up interaction listeners');
-        // Try again on any user interaction
+        // Autoplay blocked — retry on first user interaction (silent, expected)
         const playOnInteraction = () => {
           if (video.paused) {
             video.muted = true;
             video.play().then(() => {
               setVideoReady(true);
-              console.log('Video playing after user interaction');
-            }).catch(e => console.log('Play failed:', e));
+            }).catch(() => { /* ignore — non-critical */ });
           }
         };
         document.addEventListener('click', playOnInteraction);
         document.addEventListener('scroll', playOnInteraction);
         document.addEventListener('touchstart', playOnInteraction);
         document.addEventListener('mousemove', playOnInteraction, { once: true });
-        
+
         // Cleanup function
         return () => {
           document.removeEventListener('click', playOnInteraction);
@@ -58,16 +56,13 @@ const HeroSection = () => {
     };
 
     const handleLoadedData = () => {
-      console.log('Video data loaded');
       attemptPlay();
     };
 
-    const handleError = (e: Event) => {
-      console.error('Video error, trying fallback:', e);
-      // If CDN fails, try local
-      if (video.src.includes('customer-assets')) {
-        console.log('Switching to local video source');
-        video.src = VIDEO_LOCAL_URL;
+    const handleError = () => {
+      // If local fails, try CDN as fallback; otherwise give up silently.
+      if (video.src.includes(VIDEO_LOCAL_URL) && !video.src.includes('customer-assets')) {
+        video.src = VIDEO_CDN_URL;
         video.load();
       } else {
         setVideoError(true);
@@ -107,10 +102,10 @@ const HeroSection = () => {
               minHeight: '100%'
             }}
           >
-            {/* CDN source for reliable delivery on Netlify */}
-            <source src={VIDEO_CDN_URL} type="video/mp4" />
-            {/* Local fallback */}
+            {/* Local source — fast, reliable, always available */}
             <source src={VIDEO_LOCAL_URL} type="video/mp4" />
+            {/* CDN fallback */}
+            <source src={VIDEO_CDN_URL} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         )}

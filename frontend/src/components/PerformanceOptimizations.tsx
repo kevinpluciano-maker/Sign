@@ -167,20 +167,25 @@ export const inlineCriticalCSS = () => {
 // Performance monitoring
 export const monitorPerformance = () => {
   if (typeof window !== 'undefined' && 'performance' in window) {
+    // Silent unless opt-in: localStorage.setItem('debug:web-vitals','1')
+    const shouldLog = () =>
+      typeof window !== 'undefined' &&
+      window.localStorage?.getItem('debug:web-vitals') === '1';
+
     // Core Web Vitals monitoring
     const observeWebVitals = () => {
       // LCP (Largest Contentful Paint)
       new PerformanceObserver((entryList) => {
         const entries = entryList.getEntries();
         const lastEntry = entries[entries.length - 1];
-        console.log('LCP:', lastEntry.startTime);
+        if (shouldLog()) console.log('LCP:', lastEntry.startTime);
       }).observe({ entryTypes: ['largest-contentful-paint'] });
 
       // FID (First Input Delay)
       new PerformanceObserver((entryList) => {
         const entries = entryList.getEntries();
         entries.forEach((entry) => {
-          console.log('FID:', entry.processingStart - entry.startTime);
+          if (shouldLog()) console.log('FID:', (entry as any).processingStart - entry.startTime);
         });
       }).observe({ entryTypes: ['first-input'] });
 
@@ -193,7 +198,7 @@ export const monitorPerformance = () => {
             clsValue += entry.value;
           }
         });
-        console.log('CLS:', clsValue);
+        if (shouldLog()) console.log('CLS:', clsValue);
       }).observe({ entryTypes: ['layout-shift'] });
     };
 

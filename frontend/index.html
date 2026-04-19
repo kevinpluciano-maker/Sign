@@ -170,26 +170,31 @@
     <!-- Load main script at the end for better performance -->
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- Performance monitoring -->
+    <!-- Performance monitoring (silent unless opt-in via localStorage) -->
     <script>
-      // Enhanced performance monitoring
+      // Enhanced performance monitoring — only logs when ?localStorage['debug:web-vitals']='1'
       window.addEventListener('load', function() {
+        var debugOn = (function () {
+          try { return window.localStorage && window.localStorage.getItem('debug:web-vitals') === '1'; }
+          catch (e) { return false; }
+        })();
+        if (!debugOn) return;
         if ('performance' in window) {
-          const perfData = performance.getEntriesByType('navigation')[0];
+          var perfData = performance.getEntriesByType('navigation')[0];
           if (perfData) {
-            const loadTime = perfData.loadEventEnd - perfData.fetchStart;
+            var loadTime = perfData.loadEventEnd - perfData.fetchStart;
             console.log('Page load time:', loadTime, 'ms');
-            
+
             // Log LCP manually if possible
             try {
-              const observer = new PerformanceObserver((list) => {
-                const entries = list.getEntries();
-                const lastEntry = entries[entries.length - 1];
+              var observer = new PerformanceObserver(function (list) {
+                var entries = list.getEntries();
+                var lastEntry = entries[entries.length - 1];
                 console.log('LCP:', lastEntry.startTime, 'ms');
               });
               observer.observe({type: 'largest-contentful-paint', buffered: true});
             } catch (e) {
-              console.log('LCP monitoring not supported');
+              /* LCP monitoring not supported — silent */
             }
           }
         }

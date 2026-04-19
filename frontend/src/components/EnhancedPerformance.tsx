@@ -28,8 +28,10 @@ const EnhancedPerformance = () => {
       }
       
       emptyNodes.forEach(node => node.parentNode?.removeChild(node));
-      
-      console.log(`Removed ${emptyNodes.length} empty text nodes`);
+
+      if (typeof window !== 'undefined' && window.localStorage?.getItem('debug:perf') === '1') {
+        console.log(`Removed ${emptyNodes.length} empty text nodes`);
+      }
     };
 
     // 2. Lazy load images below the fold
@@ -104,7 +106,9 @@ const EnhancedPerformance = () => {
       });
       
       // This is a simplified version - full implementation would scan stylesheets
-      console.log(`Active CSS classes: ${usedClasses.size}`);
+      if (typeof window !== 'undefined' && window.localStorage?.getItem('debug:perf') === '1') {
+        console.log(`Active CSS classes: ${usedClasses.size}`);
+      }
     };
 
     // 6. Optimize rendering
@@ -126,7 +130,9 @@ const EnhancedPerformance = () => {
     const optimizeMemory = () => {
       // Clean up event listeners on hidden elements
       const hiddenElements = document.querySelectorAll('[hidden], [style*="display: none"]');
-      console.log(`Found ${hiddenElements.length} hidden elements`);
+      if (typeof window !== 'undefined' && window.localStorage?.getItem('debug:perf') === '1') {
+        console.log(`Found ${hiddenElements.length} hidden elements`);
+      }
       
       // Debounce scroll and resize events
       let scrollTimeout: NodeJS.Timeout;
@@ -177,8 +183,8 @@ const EnhancedPerformance = () => {
         ];
         
         criticalFonts.forEach(font => {
-          (document as any).fonts.load(`16px ${font}`).then(() => {
-            console.log(`${font} loaded`);
+          (document as any).fonts.load(`16px ${font}`).catch(() => {
+            /* non-critical — fallback font will be used */
           });
         });
       }
