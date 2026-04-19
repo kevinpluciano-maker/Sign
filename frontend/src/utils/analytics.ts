@@ -2,12 +2,14 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 // Google Analytics ID - Replace with your actual GA4 measurement ID
-const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-XXXXXXXXXX';
+const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || '';
 
-// Initialize Google Analytics
+// Initialize Google Analytics — no-op unless a real measurement ID is configured.
+// Prevents ERR_NAME_NOT_RESOLVED / script-src CSP noise when GA isn't set up.
 export const initGA = () => {
   if (typeof window === 'undefined') return;
-  
+  if (!GA_MEASUREMENT_ID || GA_MEASUREMENT_ID === 'G-XXXXXXXXXX') return;
+
   // Add GA script
   const script = document.createElement('script');
   script.async = true;

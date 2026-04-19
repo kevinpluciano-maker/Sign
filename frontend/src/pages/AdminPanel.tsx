@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import ImprovedFooter from '@/components/ImprovedFooter';
@@ -81,9 +81,17 @@ const AdminPanel = () => {
   const { user, isAdmin, loading: authLoading, logout } = useAuth();
   const [sections, setSections] = useState<ContentSection[]>(DEFAULT_SECTIONS);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'approved' | 'pending' | 'hidden'>('all');
   const [editingReview, setEditingReview] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ title: '', content: '', rating: 0, author: '' });
   const [stats, setStats] = useState<any>(null);
+
+  // Filter reviews based on the currently-selected status tab.
+  // Legacy reviews without an explicit status are treated as 'approved'.
+  const filteredReviews = useMemo(() => {
+    if (reviewFilter === 'all') return reviews;
+    return reviews.filter((r) => (r.status || 'approved') === reviewFilter);
+  }, [reviews, reviewFilter]);
 
   // Route protection
   useEffect(() => {
@@ -217,6 +225,30 @@ const AdminPanel = () => {
       setReviews((prev) => prev.map((x) => (x.id === r.id ? { ...x, featured: !x.featured } : x)));
     } catch (e: any) {
       toast.error('Toggle failed: ' + e.message);
+    }
+  };
+
+  // Change a review's moderation status (approved / pending / hidden).
+  const setReviewStatus = async (
+    r: Review,
+    status: 'approved' | 'pending' | 'hidden'
+  ) => {
+    try {
+      await apiFetch(API_ENDPOINTS.admin.reviewById(r.id), {
+        method: 'PUT',
+        auth: true,
+        json: { status },
+      });
+      setReviews((prev) => prev.map((x) => (x.id === r.id ? { ...x, status } : x)));
+      toast.success(
+        status === 'approved'
+          ? 'Review approved — it will now show on the site'
+          : status === 'hidden'
+          ? 'Review hidden'
+          : 'Review set to pending'
+      );
+    } catch (e: any) {
+      toast.error('Status update failed: ' + e.message);
     }
   };
 

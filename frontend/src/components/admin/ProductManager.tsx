@@ -80,6 +80,8 @@ export const ProductManager = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<Product>>(EMPTY);
   const [isNew, setIsNew] = useState(true);
+  const [importing, setImporting] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
