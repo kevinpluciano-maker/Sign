@@ -1,7 +1,7 @@
 # Test Credentials
 
 ## Admin Account (seeded on backend startup from backend/.env)
-- Email: `kevinpluciano@gmail.com`
+- Email: `kevin@decalmax.ca`
 - Password: `Ke34023616@`
 - Role: `admin`
 
