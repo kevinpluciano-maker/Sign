@@ -38,10 +38,22 @@ The core issue throughout: checkout + admin actions broke whenever the Emergent 
   - `/app/frontend/src/components/admin/ProductManager.tsx` — Full product CRUD UI (name, price, category, images, gallery, sizes, colors, materials, features, published/featured/in-stock toggles, delete confirm dialog).
   - Removed 6 stale Emergent-URL fallbacks (Contact, ModernContact, ProductReviews, NewsletterSignup, CustomSizeRequest, AdminPanel).
 
-### Tests
-- 22/22 backend pytest cases passed (`/app/backend/tests/test_admin_api.py`).
-- Frontend login + admin tab rendering + CRUD flows verified via testing agent.
-- Test report: `/app/test_reports/iteration_1.json`.
+### Legacy Admin Purge (2026-04-19 follow-up)
+- User reported they were still seeing the OLD admin UI. Root cause: a floating `EditorToolbar.tsx` rendered on every page opened an old `AdminMode.tsx` modal that wrote to localStorage (not MongoDB).
+- Neutralized all legacy admin components to no-ops/passthroughs so no code churn in consumer pages:
+  - `EditorToolbar.tsx` → returns `null`
+  - `AdminMode.tsx` → returns `null`
+  - `ProductEditorModal.tsx` → returns `null`
+  - `PageEditor.tsx` / `DraggableSection.tsx` → passthrough wrappers
+  - `EditableProductCard.tsx` → delegates to plain `ProductCard`
+  - `InlineEditor.tsx` / `ImageEditor.tsx` → plain text/img
+  - `EditorContext.tsx` → rewritten as read-only provider for header/footer data; all mutators are no-ops; `isEditing`/`isPreviewing` permanently false
+- Added `data-testid="header-admin-link"` Admin button in Header visible only when `isAdmin` — routes to `/admin`.
+- Testing agent iteration 2 confirmed: zero floating toolbar on /, /products, /about, /cart, /collections/best-sellers, /products/staff-ada-sign; no console errors; anonymous side 100% verified.
+
+### Admin Email Change
+- Admin seed email updated to `kevin@decalmax.ca` in both local pod and `/app/memory/test_credentials.md`.
+- Old admin record removed from local Mongo. User must also update Render env vars `ADMIN_EMAIL` and `ADMIN_PASSWORD` for production.
 
 ## Backlog / Roadmap
 
