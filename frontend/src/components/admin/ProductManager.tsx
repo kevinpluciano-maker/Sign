@@ -14,7 +14,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Plus, Trash2, Edit2, Package, Eye, EyeOff, Star, Upload, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Edit2, Copy, Package, Eye, EyeOff, Star, Upload, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api';
 import { API_ENDPOINTS } from '@/config/api';
@@ -151,6 +151,25 @@ export const ProductManager = () => {
       load();
     } catch (e: any) {
       toast.error('Delete failed: ' + e.message);
+    }
+  };
+
+  // 1-click clone — duplicates every field, creates a fresh UUID + unique slug,
+  // starts as Draft (unpublished) so the admin can safely edit before going live.
+  const clone = async (p: Product) => {
+    try {
+      const created: any = await apiFetch(API_ENDPOINTS.admin.productClone(p.id), {
+        method: 'POST',
+        auth: true,
+      });
+      toast.success(`Cloned "${p.name}" → "${created.name}". Opening editor…`);
+      await load();
+      // Immediately open the new clone in the editor for quick customisation
+      setEditing({ ...created });
+      setIsNew(false);
+      setDialogOpen(true);
+    } catch (e: any) {
+      toast.error('Clone failed: ' + e.message);
     }
   };
 
@@ -326,6 +345,15 @@ export const ProductManager = () => {
                     data-testid={`edit-product-${p.id}`}
                   >
                     <Edit2 className="h-3 w-3 mr-1" /> Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => clone(p)}
+                    title="Clone this product"
+                    data-testid={`clone-product-${p.id}`}
+                  >
+                    <Copy className="h-3 w-3 mr-1" /> Clone
                   </Button>
                   <Button
                     size="sm"

@@ -178,4 +178,79 @@ async def delete_file(file_id: str):
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="File not found")
-    return {"status": "success"}
+    return {"status": "success", "id": file_id}
+
+
+# ---- Rename ----
+
+class MediaRename(BaseModel):
+    filename: str
+
+
+@admin_media_router.put("/{file_id}")
+async def rename_file(file_id: str, body: MediaRename):
+    """Rename a media file's display name. Storage path is unchanged so any
+    embedded URLs keep working — only the filename users see is updated."""
+    db = get_db()
+    new_name = (body.filename or "").strip()
+    if not new_name:
+        raise HTTPException(status_code=400, detail="Filename required")
+    # Simple safety: strip any path components
+    new_name = new_name.replace("/", "").replace("\\", "")[:200]
+
+    result = await db.media_files.update_one(
+        {"id": file_id, "is_deleted": False},
+        {"$set": {"filename": new_name, "updated_at": datetime.now(timezone.utc).isoformat()}},
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="File not found")
+    record = await db.media_files.find_one({"id": file_id}, {"_id": 0, "storage_path": 0})
+    return {"status": "success", "file": record}
+
+
+# ---- Replace (re-upload while keeping the same public URL / file_id) ----
+
+@admin_media_router.post("/{file_id}/replace")
+async def replace_file(file_id: str, request: Request, file: UploadFile = File(...)):
+    """Swap the binary content of an existing media record. The file_id and the
+    public URL (/api/media/{file_id}) stay the same, so everywhere it's used on
+    the site updates automatically. Great for fixing a bad image without having
+    to re-edit every product."""
+    db = get_db()
+    record = await db.media_files.find_one({"id": file_id, "is_deleted": False}, {"_id": 0})
+    if not record:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    content_type = file.content_type or "application/octet-stream"
+    if content_type not in ALLOWED_MIME:
+        raise HTTPException(status_code=400, detail=f"Unsupported type: {content_type}")
+    data = await file.read()
+    if len(data) > MAX_BYTES:
+        raise HTTPException(status_code=413, detail="File too large (max 10MB)")
+
+    ext = ALLOWED_MIME[content_type]
+    storage_path = f"{APP_NAME}/media/{file_id}.{ext}"
+    result = _put_object(storage_path, data, content_type)
+
+    now = datetime.now(timezone.utc).isoformat()
+    await db.media_files.update_one(
+        {"id": file_id},
+        {
+            "$set": {
+                "filename": file.filename or record.get("filename") or f"{file_id}.{ext}",
+                "storage_path": result["path"],
+                "content_type": content_type,
+                "size": result.get("size", len(data)),
+                "updated_at": now,
+            }
+        },
+    )
+    base = str(request.base_url).rstrip("/")
+    return {
+        "id": file_id,
+        "filename": file.filename or record.get("filename"),
+        "content_type": content_type,
+        "size": result.get("size", len(data)),
+        "url": f"{base}/api/media/{file_id}",
+        "updated_at": now,
+    }

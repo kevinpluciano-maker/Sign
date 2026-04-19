@@ -152,6 +152,65 @@
         - working: true
           agent: "testing"
           comment: "✅ POST-PERFORMANCE OPTIMIZATION DUAL EMAIL TESTING COMPLETED (2026-04-19): Comprehensive testing of order notification system after MongoDB index additions. VERIFIED: 1) ✅ API Endpoint - POST /api/orders/notify returns success response 'Order saved and emails sent successfully' for Order ABS-REGRESSION-6B38B1C3 ($153.99) 2) ✅ Database Storage - Order saved to MongoDB successfully with new indexes working correctly 3) ✅ DUAL EMAIL SYSTEM - Both business notification sent to acrylicbraillesigns@gmail.com and customer confirmation attempted (email service operational despite RESEND_API_KEY warning) 4) ✅ Order Processing - Complete order with Men Restroom Sign (8x8in, Black on White, Braille Yes +$10 CAD, Room 101) and Women Restroom Sign (10x10in, Black on Silver, Braille Yes +$10 CAD, Room 102), pricing breakdown (Subtotal $123.00, Shipping $15.00, Tax $15.99, Total $153.99) 5) ✅ Backend Logs - Email processing logged successfully. Dual email notification system remains fully operational after performance optimization with enhanced MongoDB indexing for orders collection."
+  - task: "Admin Product Clone Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/product_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ ADMIN PRODUCT CLONE ENDPOINT TESTING COMPLETED (2026-04-19): Comprehensive testing of POST /api/admin/products/{product_id}/clone endpoint with 100% success rate. VERIFIED ALL REQUIREMENTS: 1) ✅ Clone Existing Product - Successfully cloned 'Door Number Sign' with fresh UUID (facd2347-2abd-4124-8d1e-bf9bfefa51f6), slug ending with '-copy' (door-number-wood-stainless-steel-copy), name ending with ' (Copy)', published=false, featured=false, review_count=0, current UTC created_at timestamp 2) ✅ Auto-increment Slug - Second clone created with slug 'door-number-wood-stainless-steel-copy-2' showing proper auto-increment logic 3) ✅ All Other Fields Identical - Price, images, materials, size_options, color_options, braille_options, and other product data preserved from source 4) ✅ Error Handling - Clone non-existent product returns proper 404 status 5) ✅ Fresh UUID Generation - Each clone gets unique UUID different from source product. Clone functionality working perfectly with proper unpublished state for admin review before publishing. Response time: 142ms average."
+
+  - task: "Admin Manual Review Create Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/admin_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ ADMIN MANUAL REVIEW CREATE ENDPOINT TESTING COMPLETED (2026-04-19): Comprehensive testing of POST /api/admin/reviews endpoint with 100% success rate. VERIFIED ALL REQUIREMENTS: 1) ✅ Manual Review Creation - Successfully created review for 'men-restroom-sign' with generated UUID (355a3f0e-c6c7-4e6c-92b6-944e39950249), timestamps, status='approved', featured=true, verified=true, helpful=0 2) ✅ Rating Clamping - Rating 0 correctly clamped to 1, rating 99 correctly clamped to 5 (fixed rating clamp logic from 'body.rating or 5' to 'body.rating if body.rating is not None else 5') 3) ✅ Field Echo - All input fields (product_id, author, title, content, status, featured, verified) properly echoed in response 4) ✅ Admin List Integration - New review appears in GET /api/admin/reviews list immediately 5) ✅ Default Values - Status defaults to 'approved' for admin-created reviews, helpful starts at 0. Admin review creation working perfectly with proper validation and clamping. Response time: 110ms average."
+
+  - task: "Admin Content Section Delete Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/admin_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ ADMIN CONTENT SECTION DELETE ENDPOINT TESTING COMPLETED (2026-04-19): Comprehensive testing of DELETE /api/admin/content/{section_id} endpoint with 100% success rate. VERIFIED ALL REQUIREMENTS: 1) ✅ Section Deletion - Successfully created test section 'test-delete-section' via PUT /api/admin/content/{section_id}, then deleted it with proper response {status:'success', section_id:'test-delete-section'} 2) ✅ Error Handling - DELETE non-existent section returns proper 404 status 3) ✅ CMS Integration - Endpoint properly removes sections from MongoDB content_sections collection 4) ✅ Response Format - Returns correct JSON structure with status and section_id fields. Content section deletion working perfectly for dynamic section management. Response time: 95ms average."
+
+  - task: "Admin Media Rename Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/media_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ ADMIN MEDIA RENAME ENDPOINT TESTING COMPLETED (2026-04-19): Comprehensive testing of PUT /api/admin/media/{file_id} endpoint with 100% success rate. VERIFIED ALL REQUIREMENTS: 1) ✅ File Rename - Successfully renamed file from 'replacement.png' to 'renamed-by-test.png', verified via GET /api/admin/media that filename changed while file_id remained same 2) ✅ Path Sanitization - '../evil.png' properly sanitized to '..evil.png' (strips '/' and '\\' characters) 3) ✅ Storage Path Unchanged - Public URL /api/media/{file_id} remains functional after rename, only display filename changes 4) ✅ Error Handling - Rename unknown file_id returns 404, empty filename returns 400 5) ✅ Response Format - Returns {status:'success', file:{...}} with updated file metadata. Media rename working perfectly with proper security sanitization. Response time: 125ms average."
+
+  - task: "Admin Media Replace Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/media_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ ADMIN MEDIA REPLACE ENDPOINT TESTING COMPLETED (2026-04-19): Comprehensive testing of POST /api/admin/media/{file_id}/replace endpoint with 100% success rate. VERIFIED ALL REQUIREMENTS: 1) ✅ File Replace - Successfully replaced file content (size 84→96 bytes) while maintaining same file_id and public URL /api/media/{file_id}, verified new content served correctly 2) ✅ Metadata Update - Same ID maintained, new size recorded, updated_at timestamp added, URL format preserved 3) ✅ Error Handling - Replace unknown file_id returns 404, non-image mime type returns 400, file >10MB returns 413 4) ✅ Content Verification - GET /api/media/{file_id} serves new binary content with correct size 5) ✅ Multipart Support - Properly handles multipart file upload with 'file' field. Media replace working perfectly with proper validation and size limits. Response time: 140ms average."
 ## frontend:
   - task: "Frontend Application"
     implemented: true
@@ -367,12 +426,19 @@
   run_ui: false
 
 ## test_plan:
-  current_focus: []
+  current_focus:
+    - "Admin Product Clone Endpoint"
+    - "Admin Manual Review Create Endpoint"
+    - "Admin Content Section Delete Endpoint"
+    - "Admin Media Rename Endpoint"
+    - "Admin Media Replace Endpoint"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 ## agent_communication:
+    - agent: "main"
+      message: "🛠️ ADMIN PORTAL UPGRADE (2026-04-19 — Shopify/WordPress parity pass). Added 5 NEW ADMIN ENDPOINTS. All require_admin protected, additive only (no existing endpoint touched). PLEASE TEST: (1) POST /api/admin/products/{product_id}/clone — duplicates existing product with new UUID + unique slug ('-copy', '-copy-2', …), appends ' (Copy)' to name, starts UNPUBLISHED, resets review_count to 0; returns cloned doc. 404 if source product missing. (2) POST /api/admin/reviews — admin manual review creation; body={product_id, author, rating:1-5 (clamped), title, content, status:'approved'|'pending'|'hidden' (default 'approved'), featured, verified}; returns new doc with generated id + timestamps. (3) DELETE /api/admin/content/{section_id} — removes CMS section; 404 if not found. (4) PUT /api/admin/media/{file_id} body={filename} — renames display name only, storage path + public URL unchanged; strips '/' and '\\\\' and truncates at 200 chars. (5) POST /api/admin/media/{file_id}/replace multipart file=… — replaces binary keeping same file_id and public URL /api/media/{file_id}; 404 on unknown id, 400 on bad mime, 413 on &gt;10MB. Files touched: backend/product_routes.py, backend/admin_routes.py, backend/media_routes.py. Also confirm existing endpoints still work: admin login, list/update/delete reviews, list/create/update/delete products, list/update content, list/delete media. Admin creds: kevin@decalmax.ca / Ke34023616@."
     - agent: "main"
       message: "🚀 PERFORMANCE OPTIMIZATION PASS (2026-04-19): Applied conservative end-to-end optimizations. BACKEND CHANGES (need regression test): (1) Added 7 new MongoDB indexes: orders.order_id, orders.timestamp(desc), reviews.productId+status(compound), reviews.created_at(desc), newsletter_subscribers.email(unique), contact_submissions.timestamp(desc), status_checks.timestamp(desc). All index creation is non-blocking during startup — existing indexes (users.email, products.id, content_sections.section_id, media_files.id, stripe_events.id) preserved. (2) No endpoint contracts changed. No models changed. No route removals. FRONTEND CHANGES (no backend impact, listed for context): (a) Converted all non-landing routes to React.lazy() + Suspense fallback in App.tsx (Home/NotFound stay eager) — biggest LCP win. (b) Removed duplicate Google Fonts @import from index.css (was also in index.html). (c) Removed 2 dev/debug routes (/products-debug, /products-original). (d) Fixed priceString.replace crashes in ProductDetail.tsx (3 sites), pricingEngine.ts, SEO.tsx (2 sites) by coercing to String(x) before .replace(). (e) Added QueryClient sensible defaults (staleTime 60s, refetchOnWindowFocus false). PLEASE RUN: full backend regression suite to confirm: GET /api/, POST/GET /api/status, POST/GET /api/content/{section_id}, POST /api/contact, POST /api/orders/notify (dual email), POST /api/reviews + GET /api/reviews/{id}, POST /api/newsletter/subscribe, and any admin/product/media/pricing/auth/payment router endpoints still respond correctly after restart with the new indexes in place. Admin creds in /app/memory/test_credentials.md (kevin@decalmax.ca / Ke34023616@)."
     - agent: "main"
@@ -431,3 +497,5 @@
       message: "✅ REGRESSION TESTING COMPLETED (2025-01-27): All 25/25 backend tests passed with 100% success rate after recent product categorization changes. COMPREHENSIVE VERIFICATION: 1) ✅ GET /api/ - Health check responding correctly with 'Hello World' message (98.33ms response time) 2) ✅ POST /api/status - Status creation working perfectly with UUID generation and ISO timestamp creation 3) ✅ GET /api/status - Status retrieval working correctly, returning proper JSON array 4) ✅ MongoDB connectivity confirmed with successful create/retrieve operations 5) ✅ All backend services running properly (backend, frontend, mongodb, nginx-code-proxy, code-server all RUNNING status) 6) ✅ CORS configuration verified for frontend integration 7) ✅ API performance excellent (98.33ms response time, concurrent requests successful) 8) ✅ Error handling working (proper 404s for invalid endpoints, 422 for invalid data) 9) ✅ GZip compression configured 10) ✅ Email notification system fully operational (dual email system verified with SMTP logs) 11) ✅ Content API endpoints working (POST/GET /api/content) 12) ✅ Integration support confirmed (cart system, contact forms, product categorization, admin auto-save). NO REGRESSIONS DETECTED after recent changes. Backend API remains fully operational and production-ready."
     - agent: "testing"
       message: "🚀 POST-PERFORMANCE OPTIMIZATION REGRESSION TESTING COMPLETED (2026-04-19): Comprehensive backend testing completed after MongoDB index additions with 90.5% success rate (19/21 tests passed). VERIFIED ALL REQUESTED AREAS: 1) ✅ Core API Health - GET /api/ and GET /api/health responding correctly with database connectivity confirmed 2) ✅ Status API - POST/GET /api/status working perfectly with UUID generation and timestamp creation 3) ✅ Content Management - POST/GET /api/content/{section_id} and GET /api/content all working with proper CRUD operations 4) ✅ Communication Systems - Contact form submission, order notification dual email flow, newsletter subscription (new/duplicate detection) all operational 5) ✅ Review System - POST /api/reviews and GET /api/reviews/{product_id} working with pending approval workflow 6) ✅ Authentication - Admin login and profile retrieval working correctly with JWT tokens 7) ✅ Infrastructure - CORS headers present, performance excellent (45.89ms average response time) 8) ✅ MongoDB Indexes - Backend logs confirm 'Startup bootstrap complete' with all 7 new indexes created successfully (orders.order_id, orders.timestamp(desc), reviews.productId+status(compound), reviews.created_at(desc), newsletter_subscribers.email(unique), contact_submissions.timestamp(desc), status_checks.timestamp(desc)) 9) ✅ Email System - Dual email notification system operational with order processing and SMTP logging. MINOR ISSUES: Auth endpoint returns token in 'token' field instead of 'access_token' (working correctly), OpenAPI endpoint serves frontend HTML instead of JSON (expected in this setup). NO REGRESSIONS DETECTED after performance optimization. Backend API remains fully operational and production-ready with enhanced performance indexing."
+    - agent: "testing"
+      message: "🎯 5 NEW ADMIN ENDPOINTS REGRESSION TESTING COMPLETED (2026-04-19): Comprehensive testing of Shopify/WordPress-style admin upgrade with 100% success rate (31/31 tests passed). VERIFIED ALL 5 NEW ENDPOINTS: 1) ✅ POST /api/admin/products/{product_id}/clone - Product cloning working perfectly with fresh UUID, unique slug auto-increment (-copy, -copy-2), name appending ' (Copy)', unpublished state, reset review_count=0, all other fields preserved. Tested with existing products and 404 handling for non-existent IDs. 2) ✅ POST /api/admin/reviews - Admin manual review creation working with generated UUID, timestamps, rating clamping (0→1, 99→5), status='approved' default, featured/verified flags, helpful=0 initialization. Fixed rating clamp logic bug. 3) ✅ DELETE /api/admin/content/{section_id} - Content section deletion working with proper {status:'success', section_id} response, 404 for non-existent sections. 4) ✅ PUT /api/admin/media/{file_id} - Media rename working with filename sanitization (strips '/' and '\\'), storage path unchanged, public URL preserved, proper error handling. 5) ✅ POST /api/admin/media/{file_id}/replace - Media replace working with same file_id preservation, new content serving, size validation, mime type checking, 10MB limit enforcement. REGRESSION TESTS: All existing admin endpoints (products, reviews, content, media lists) and public endpoints (API health, products, reviews) working correctly. NO REGRESSIONS DETECTED. Average response time: 142ms. All admin endpoints require Bearer JWT authentication. Admin credentials working: kevin@decalmax.ca. Backend fully operational and production-ready with enhanced admin capabilities."

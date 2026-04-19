@@ -6,7 +6,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Upload, Trash2, Copy, Image as ImageIcon } from 'lucide-react';
+import { Upload, Trash2, Copy, Image as ImageIcon, Pencil, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch, getAuthToken } from '@/lib/api';
 import { API_ENDPOINTS, BACKEND_URL } from '@/config/api';
@@ -80,6 +80,61 @@ export const MediaLibrary = ({ pickerMode = false, onPick }: Props) => {
     if (f) upload(f);
   };
 
+  // Rename a file's display name (public URL is unchanged).
+  const rename = async (file: MediaFile) => {
+    const next = window.prompt('New filename:', file.filename)?.trim();
+    if (!next || next === file.filename) return;
+    try {
+      await apiFetch(API_ENDPOINTS.admin.mediaById(file.id), {
+        method: 'PUT',
+        auth: true,
+        json: { filename: next },
+      });
+      setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, filename: next } : f)));
+      toast.success('Renamed');
+    } catch (e: any) {
+      toast.error('Rename failed: ' + e.message);
+    }
+  };
+
+  // Swap the binary content of an existing file. Any page that embeds
+  // /api/media/{id} will update automatically once the cache refreshes.
+  const replaceRef = useRef<HTMLInputElement>(null);
+  const replaceTargetRef = useRef<string | null>(null);
+
+  const triggerReplace = (id: string) => {
+    replaceTargetRef.current = id;
+    replaceRef.current?.click();
+  };
+
+  const onReplaceChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    const targetId = replaceTargetRef.current;
+    if (!f || !targetId) return;
+    if (f.size > 10 * 1024 * 1024) {
+      toast.error('File too large (max 10MB)');
+      return;
+    }
+    try {
+      const fd = new FormData();
+      fd.append('file', f);
+      const token = getAuthToken();
+      const res = await fetch(API_ENDPOINTS.admin.mediaReplace(targetId), {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: fd,
+      });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Replace failed');
+      toast.success('File replaced — same URL now serves the new image');
+      load();
+    } catch (e: any) {
+      toast.error('Replace failed: ' + e.message);
+    } finally {
+      replaceTargetRef.current = null;
+      if (replaceRef.current) replaceRef.current.value = '';
+    }
+  };
+
   const remove = async (id: string) => {
     try {
       await apiFetch(API_ENDPOINTS.admin.mediaById(id), {
@@ -120,6 +175,15 @@ export const MediaLibrary = ({ pickerMode = false, onPick }: Props) => {
               onChange={onFileChosen}
               className="hidden"
               data-testid="media-upload-input"
+            />
+            {/* Hidden input used exclusively by the Replace-file button flow */}
+            <input
+              ref={replaceRef}
+              type="file"
+              accept="image/*"
+              onChange={onReplaceChosen}
+              className="hidden"
+              data-testid="media-replace-input"
             />
             <Button
               onClick={() => inputRef.current?.click()}
@@ -171,6 +235,26 @@ export const MediaLibrary = ({ pickerMode = false, onPick }: Props) => {
                     </Button>
                   ) : (
                     <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2"
+                        onClick={() => rename(f)}
+                        title="Rename"
+                        data-testid={`rename-media-${f.id}`}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2"
+                        onClick={() => triggerReplace(f.id)}
+                        title="Replace file (keeps same URL)"
+                        data-testid={`replace-media-${f.id}`}
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"

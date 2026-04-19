@@ -20,6 +20,17 @@ admin_router = APIRouter(
 
 # ---- Reviews ----
 
+class ReviewCreate(BaseModel):
+    product_id: str
+    author: str
+    rating: int = 5
+    title: str = ""
+    content: str
+    status: str = "approved"   # admin-created reviews default to approved
+    featured: bool = False
+    verified: bool = False
+
+
 class ReviewUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
@@ -34,6 +45,36 @@ async def list_reviews():
     db = get_db()
     reviews = await db.reviews.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return {"reviews": reviews, "total": len(reviews)}
+
+
+@admin_router.post("/reviews", status_code=201)
+async def create_review_admin(body: ReviewCreate):
+    """Admin-only manual review creation.
+    Unlike the public endpoint, these default to `approved` and can be featured
+    immediately — mirrors Shopify's 'add testimonial' flow."""
+    import uuid as _uuid
+    db = get_db()
+    now = datetime.now(timezone.utc).isoformat()
+    # Clamp rating
+    rating = max(1, min(5, int(body.rating if body.rating is not None else 5)))
+    status = body.status if body.status in ("approved", "pending", "hidden") else "approved"
+    doc = {
+        "id": str(_uuid.uuid4()),
+        "productId": body.product_id,
+        "author": (body.author or "Anonymous").strip() or "Anonymous",
+        "rating": rating,
+        "title": (body.title or "").strip(),
+        "content": (body.content or "").strip(),
+        "status": status,
+        "featured": bool(body.featured),
+        "verified": bool(body.verified),
+        "helpful": 0,
+        "created_at": now,
+        "date": now,
+    }
+    await db.reviews.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
 
 
 @admin_router.put("/reviews/{review_id}")
@@ -89,6 +130,17 @@ async def list_all_content():
     db = get_db()
     items = await db.content_sections.find({}, {"_id": 0}).to_list(500)
     return {"sections": items, "total": len(items)}
+
+
+@admin_router.delete("/content/{section_id}")
+async def delete_content_section(section_id: str):
+    """Remove a CMS section entirely. Used by the dynamic section manager
+    so admins can delete sections they previously added."""
+    db = get_db()
+    result = await db.content_sections.delete_one({"section_id": section_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Section not found")
+    return {"status": "success", "section_id": section_id}
 
 
 # ---- Orders read-only dashboard ----

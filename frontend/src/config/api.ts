@@ -39,11 +39,13 @@ export const API_ENDPOINTS = {
     contentById: (id: string) => `${BACKEND_URL}/api/admin/content/${id}`,
     products: `${BACKEND_URL}/api/admin/products`,
     productById: (id: string) => `${BACKEND_URL}/api/admin/products/${id}`,
+    productClone: (id: string) => `${BACKEND_URL}/api/admin/products/${id}/clone`,
     productsBulkImport: `${BACKEND_URL}/api/admin/products/bulk-import`,
     orders: `${BACKEND_URL}/api/admin/orders`,
     media: `${BACKEND_URL}/api/admin/media`,
     mediaUpload: `${BACKEND_URL}/api/admin/media/upload`,
     mediaById: (id: string) => `${BACKEND_URL}/api/admin/media/${id}`,
+    mediaReplace: (id: string) => `${BACKEND_URL}/api/admin/media/${id}/replace`,
     pricing: `${BACKEND_URL}/api/admin/pricing`,
   },
   // Public pricing (banners, promos, global %)

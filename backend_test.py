@@ -1,657 +1,802 @@
 #!/usr/bin/env python3
 """
-BSign Backend Regression Testing Suite
-Post-Performance Optimization Testing (2026-04-19)
-
-Tests all backend endpoints after MongoDB index additions to ensure no regressions.
+Comprehensive backend testing for BSign Store Admin Endpoints
+Tests 5 new admin endpoints + regression testing of existing endpoints
 """
 
 import requests
 import json
 import time
+import io
+from typing import Dict, Any, Optional
 import uuid
-from datetime import datetime
-from typing import Dict, List, Any
 
 # Configuration
-BASE_URL = "https://coding-walkthrough.preview.emergentagent.com/api"
+BASE_URL = "https://coding-walkthrough.preview.emergentagent.com"
 ADMIN_EMAIL = "kevin@decalmax.ca"
 ADMIN_PASSWORD = "Ke34023616@"
 
-class BackendTester:
+class BSignTester:
     def __init__(self):
-        self.session = requests.Session()
+        self.base_url = BASE_URL
+        self.admin_token = None
         self.test_results = []
-        self.auth_token = None
-        self.total_tests = 0
-        self.passed_tests = 0
+        self.response_times = []
         
-    def log_test(self, test_name: str, passed: bool, details: str = "", response_time: float = 0):
+    def log_test(self, test_name: str, success: bool, details: str = "", response_time: float = 0):
         """Log test result"""
-        self.total_tests += 1
-        if passed:
-            self.passed_tests += 1
-            status = "✅ PASS"
-        else:
-            status = "❌ FAIL"
-            
-        result = {
+        status = "✅ PASS" if success else "❌ FAIL"
+        self.test_results.append({
             "test": test_name,
-            "status": status,
-            "passed": passed,
+            "success": success,
             "details": details,
-            "response_time_ms": round(response_time * 1000, 2) if response_time > 0 else 0
-        }
-        self.test_results.append(result)
-        print(f"{status}: {test_name} ({result['response_time_ms']}ms) - {details}")
+            "response_time": response_time
+        })
+        if response_time > 0:
+            self.response_times.append(response_time)
+        print(f"{status} {test_name}: {details}")
         
-    def test_health_check(self):
-        """Test GET /api/ - Basic health check"""
+    def admin_login(self) -> bool:
+        """Authenticate as admin and get JWT token"""
         try:
             start_time = time.time()
-            response = self.session.get(f"{BASE_URL}/")
-            response_time = time.time() - start_time
+            response = requests.post(
+                f"{self.base_url}/api/auth/login",
+                json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
+                timeout=30
+            )
+            response_time = (time.time() - start_time) * 1000
             
             if response.status_code == 200:
                 data = response.json()
-                if data.get("message") == "Hello World":
-                    self.log_test("Health Check (GET /api/)", True, 
-                                f"Returns 'Hello World' message", response_time)
+                # Handle both 'token' and 'access_token' field names
+                self.admin_token = data.get("token") or data.get("access_token")
+                if self.admin_token:
+                    self.log_test("Admin Login", True, f"JWT token obtained ({response_time:.2f}ms)", response_time)
+                    return True
                 else:
-                    self.log_test("Health Check (GET /api/)", False, 
-                                f"Unexpected response: {data}", response_time)
+                    self.log_test("Admin Login", False, f"No token in response: {data}")
+                    return False
             else:
-                self.log_test("Health Check (GET /api/)", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-        except Exception as e:
-            self.log_test("Health Check (GET /api/)", False, f"Exception: {str(e)}")
-            
-    def test_database_health(self):
-        """Test GET /api/health - Database connectivity"""
-        try:
-            start_time = time.time()
-            response = self.session.get(f"{BASE_URL}/health")
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("status") == "ok" and data.get("database") == "connected":
-                    self.log_test("Database Health Check", True, 
-                                f"Database connected successfully", response_time)
-                else:
-                    self.log_test("Database Health Check", False, 
-                                f"Database not connected: {data}", response_time)
-            else:
-                self.log_test("Database Health Check", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-        except Exception as e:
-            self.log_test("Database Health Check", False, f"Exception: {str(e)}")
-            
-    def test_status_endpoints(self):
-        """Test POST /api/status and GET /api/status"""
-        # Test POST /api/status
-        try:
-            test_client_name = f"regression-test-{uuid.uuid4().hex[:8]}"
-            start_time = time.time()
-            response = self.session.post(f"{BASE_URL}/status", 
-                                       json={"client_name": test_client_name})
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                data = response.json()
-                if "id" in data and "timestamp" in data and data.get("client_name") == test_client_name:
-                    self.log_test("Status Creation (POST /api/status)", True, 
-                                f"Created status with UUID {data['id'][:8]}...", response_time)
-                    test_status_id = data["id"]
-                else:
-                    self.log_test("Status Creation (POST /api/status)", False, 
-                                f"Invalid response format: {data}", response_time)
-                    return
-            else:
-                self.log_test("Status Creation (POST /api/status)", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-                return
-        except Exception as e:
-            self.log_test("Status Creation (POST /api/status)", False, f"Exception: {str(e)}")
-            return
-            
-        # Test GET /api/status
-        try:
-            start_time = time.time()
-            response = self.session.get(f"{BASE_URL}/status")
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list) and len(data) > 0:
-                    # Check if our test status is in the list
-                    found_test_status = any(s.get("id") == test_status_id for s in data)
-                    if found_test_status:
-                        self.log_test("Status Retrieval (GET /api/status)", True, 
-                                    f"Retrieved {len(data)} status records including test record", response_time)
-                    else:
-                        self.log_test("Status Retrieval (GET /api/status)", False, 
-                                    f"Test status not found in {len(data)} records", response_time)
-                else:
-                    self.log_test("Status Retrieval (GET /api/status)", False, 
-                                f"Invalid response format: {data}", response_time)
-            else:
-                self.log_test("Status Retrieval (GET /api/status)", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-        except Exception as e:
-            self.log_test("Status Retrieval (GET /api/status)", False, f"Exception: {str(e)}")
-            
-    def test_content_endpoints(self):
-        """Test content CRUD operations"""
-        test_section_id = f"test-section-{uuid.uuid4().hex[:8]}"
-        test_content = {
-            "section_id": test_section_id,
-            "content": "<h1>Test Content</h1><p>Regression test content</p>",
-            "font_size": "16px",
-            "font_family": "Arial",
-            "plain_text": "Test Content - Regression test content"
-        }
-        
-        # Test POST /api/content/{section_id}
-        try:
-            start_time = time.time()
-            response = self.session.post(f"{BASE_URL}/content/{test_section_id}", 
-                                       json=test_content)
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("section_id") == test_section_id and "id" in data:
-                    self.log_test("Content Creation (POST /api/content/{id})", True, 
-                                f"Created content section with ID {data['id'][:8]}...", response_time)
-                else:
-                    self.log_test("Content Creation (POST /api/content/{id})", False, 
-                                f"Invalid response format: {data}", response_time)
-                    return
-            else:
-                self.log_test("Content Creation (POST /api/content/{id})", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-                return
-        except Exception as e:
-            self.log_test("Content Creation (POST /api/content/{id})", False, f"Exception: {str(e)}")
-            return
-            
-        # Test GET /api/content/{section_id}
-        try:
-            start_time = time.time()
-            response = self.session.get(f"{BASE_URL}/content/{test_section_id}")
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data and data.get("section_id") == test_section_id:
-                    self.log_test("Content Retrieval (GET /api/content/{id})", True, 
-                                f"Retrieved content section successfully", response_time)
-                else:
-                    self.log_test("Content Retrieval (GET /api/content/{id})", False, 
-                                f"Content not found or invalid: {data}", response_time)
-            else:
-                self.log_test("Content Retrieval (GET /api/content/{id})", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-        except Exception as e:
-            self.log_test("Content Retrieval (GET /api/content/{id})", False, f"Exception: {str(e)}")
-            
-        # Test GET /api/content (all content)
-        try:
-            start_time = time.time()
-            response = self.session.get(f"{BASE_URL}/content")
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list):
-                    found_test_content = any(c.get("section_id") == test_section_id for c in data)
-                    if found_test_content:
-                        self.log_test("All Content Retrieval (GET /api/content)", True, 
-                                    f"Retrieved {len(data)} content sections including test section", response_time)
-                    else:
-                        self.log_test("All Content Retrieval (GET /api/content)", False, 
-                                    f"Test content not found in {len(data)} sections", response_time)
-                else:
-                    self.log_test("All Content Retrieval (GET /api/content)", False, 
-                                f"Invalid response format: {data}", response_time)
-            else:
-                self.log_test("All Content Retrieval (GET /api/content)", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-        except Exception as e:
-            self.log_test("All Content Retrieval (GET /api/content)", False, f"Exception: {str(e)}")
-            
-    def test_contact_form(self):
-        """Test POST /api/contact - Contact form submission"""
-        contact_data = {
-            "name": "Regression Test User",
-            "email": "regression.test@example.com",
-            "phone": "+1 (555) 123-4567",
-            "subject": "Backend Regression Test",
-            "message": "This is a test message for backend regression testing after performance optimization.",
-            "company": "Test Company",
-            "urgency": "medium",
-            "budget": "$1000-5000",
-            "source": "regression_test"
-        }
-        
-        try:
-            start_time = time.time()
-            response = self.session.post(f"{BASE_URL}/contact", json=contact_data)
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("status") in ["success", "warning"]:
-                    self.log_test("Contact Form Submission", True, 
-                                f"Form submitted: {data.get('message')}", response_time)
-                else:
-                    self.log_test("Contact Form Submission", False, 
-                                f"Unexpected response: {data}", response_time)
-            else:
-                self.log_test("Contact Form Submission", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-        except Exception as e:
-            self.log_test("Contact Form Submission", False, f"Exception: {str(e)}")
-            
-    def test_order_notification(self):
-        """Test POST /api/orders/notify - Dual email flow"""
-        order_data = {
-            "order_id": f"ABS-REGRESSION-{uuid.uuid4().hex[:8].upper()}",
-            "customer_name": "Regression Test Customer",
-            "customer_email": "regression.customer@example.com",
-            "customer_phone": "+1 (555) 987-6543",
-            "shipping_address": {
-                "address": "123 Test Street, Suite 100",
-                "city": "Test City",
-                "state": "TC",
-                "zip": "12345",
-                "country": "Canada"
-            },
-            "items": [
-                {
-                    "name": "Men Restroom Sign",
-                    "quantity": 1,
-                    "price": "$58.00",
-                    "specifications": {
-                        "size": "8x8in",
-                        "color": "Black on White",
-                        "braille": "Yes +$10 CAD",
-                        "room_number": "101"
-                    }
-                },
-                {
-                    "name": "Women Restroom Sign", 
-                    "quantity": 1,
-                    "price": "$65.00",
-                    "specifications": {
-                        "size": "10x10in",
-                        "color": "Black on Silver",
-                        "braille": "Yes +$10 CAD",
-                        "room_number": "102"
-                    }
-                }
-            ],
-            "subtotal": "$123.00",
-            "shipping": "$15.00",
-            "tax": "$15.99",
-            "total": "$153.99",
-            "notes": "Regression test order - performance optimization verification"
-        }
-        
-        try:
-            start_time = time.time()
-            response = self.session.post(f"{BASE_URL}/orders/notify", json=order_data)
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("status") in ["success", "partial_success", "warning"]:
-                    self.log_test("Order Notification (Dual Email)", True, 
-                                f"Order processed: {data.get('message')} (ID: {data.get('order_id')})", response_time)
-                else:
-                    self.log_test("Order Notification (Dual Email)", False, 
-                                f"Unexpected response: {data}", response_time)
-            else:
-                self.log_test("Order Notification (Dual Email)", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-        except Exception as e:
-            self.log_test("Order Notification (Dual Email)", False, f"Exception: {str(e)}")
-            
-    def test_review_system(self):
-        """Test POST /api/reviews and GET /api/reviews/{product_id}"""
-        test_product_id = "men-restroom-sign"
-        review_data = {
-            "productId": test_product_id,
-            "productName": "Men Restroom Sign",
-            "rating": 5,
-            "title": "Excellent Quality - Regression Test",
-            "content": "This is a regression test review to verify the review system works after performance optimization. The product quality is excellent.",
-            "author": "Regression Tester",
-            "email": "regression.reviewer@example.com"
-        }
-        
-        # Test POST /api/reviews
-        try:
-            start_time = time.time()
-            response = self.session.post(f"{BASE_URL}/reviews", json=review_data)
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("status") == "success":
-                    self.log_test("Review Submission", True, 
-                                f"Review submitted: {data.get('message')}", response_time)
-                else:
-                    self.log_test("Review Submission", False, 
-                                f"Unexpected response: {data}", response_time)
-                    return
-            else:
-                self.log_test("Review Submission", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-                return
-        except Exception as e:
-            self.log_test("Review Submission", False, f"Exception: {str(e)}")
-            return
-            
-        # Test GET /api/reviews/{product_id} - should return empty since review is pending
-        try:
-            start_time = time.time()
-            response = self.session.get(f"{BASE_URL}/reviews/{test_product_id}")
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                data = response.json()
-                if "reviews" in data and "averageRating" in data and "totalReviews" in data:
-                    # Reviews should be empty since they need approval
-                    if len(data["reviews"]) == 0:
-                        self.log_test("Review Retrieval (Pending Status)", True, 
-                                    f"Correctly returns empty reviews (pending approval)", response_time)
-                    else:
-                        self.log_test("Review Retrieval (Pending Status)", True, 
-                                    f"Found {len(data['reviews'])} approved reviews", response_time)
-                else:
-                    self.log_test("Review Retrieval (Pending Status)", False, 
-                                f"Invalid response format: {data}", response_time)
-            else:
-                self.log_test("Review Retrieval (Pending Status)", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-        except Exception as e:
-            self.log_test("Review Retrieval (Pending Status)", False, f"Exception: {str(e)}")
-            
-    def test_newsletter_subscription(self):
-        """Test POST /api/newsletter/subscribe"""
-        # Test new subscription
-        subscription_data = {
-            "email": f"regression.test.{uuid.uuid4().hex[:8]}@example.com",
-            "source": "regression_test",
-            "subscribed_at": datetime.now().isoformat()
-        }
-        
-        try:
-            start_time = time.time()
-            response = self.session.post(f"{BASE_URL}/newsletter/subscribe", json=subscription_data)
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("status") == "success" and not data.get("alreadySubscribed"):
-                    self.log_test("Newsletter Subscription (New)", True, 
-                                f"New subscription: {data.get('message')}", response_time)
-                else:
-                    self.log_test("Newsletter Subscription (New)", False, 
-                                f"Unexpected response: {data}", response_time)
-                    return
-            else:
-                self.log_test("Newsletter Subscription (New)", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-                return
-        except Exception as e:
-            self.log_test("Newsletter Subscription (New)", False, f"Exception: {str(e)}")
-            return
-            
-        # Test duplicate subscription
-        try:
-            start_time = time.time()
-            response = self.session.post(f"{BASE_URL}/newsletter/subscribe", json=subscription_data)
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("status") == "success" and data.get("alreadySubscribed"):
-                    self.log_test("Newsletter Subscription (Duplicate)", True, 
-                                f"Duplicate handled: {data.get('message')}", response_time)
-                else:
-                    self.log_test("Newsletter Subscription (Duplicate)", False, 
-                                f"Duplicate not detected: {data}", response_time)
-            else:
-                self.log_test("Newsletter Subscription (Duplicate)", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-        except Exception as e:
-            self.log_test("Newsletter Subscription (Duplicate)", False, f"Exception: {str(e)}")
-            
-    def test_auth_endpoints(self):
-        """Test authentication endpoints if available"""
-        # Test login
-        login_data = {
-            "email": ADMIN_EMAIL,
-            "password": ADMIN_PASSWORD
-        }
-        
-        try:
-            start_time = time.time()
-            response = self.session.post(f"{BASE_URL}/auth/login", json=login_data)
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                data = response.json()
-                if "access_token" in data:
-                    self.auth_token = data["access_token"]
-                    self.log_test("Admin Login", True, 
-                                f"Login successful, token received", response_time)
-                else:
-                    self.log_test("Admin Login", False, 
-                                f"No token in response: {data}", response_time)
-                    return
-            else:
-                self.log_test("Admin Login", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-                return
+                self.log_test("Admin Login", False, f"Status {response.status_code}: {response.text}")
+                return False
         except Exception as e:
             self.log_test("Admin Login", False, f"Exception: {str(e)}")
-            return
+            return False
+    
+    def get_auth_headers(self) -> Dict[str, str]:
+        """Get authorization headers for admin requests"""
+        if not self.admin_token:
+            raise Exception("No admin token available")
+        return {"Authorization": f"Bearer {self.admin_token}"}
+    
+    def test_product_clone_endpoint(self):
+        """Test POST /api/admin/products/{product_id}/clone"""
+        print("\n=== Testing Product Clone Endpoint ===")
+        
+        try:
+            # First get list of existing products
+            start_time = time.time()
+            response = requests.get(
+                f"{self.base_url}/api/admin/products",
+                headers=self.get_auth_headers(),
+                timeout=30
+            )
+            response_time = (time.time() - start_time) * 1000
             
-        # Test /api/auth/me with token
-        if self.auth_token:
-            try:
-                headers = {"Authorization": f"Bearer {self.auth_token}"}
+            if response.status_code != 200:
+                self.log_test("Get Products for Clone", False, f"Status {response.status_code}: {response.text}")
+                return
+                
+            products = response.json().get("products", [])
+            if not products:
+                self.log_test("Get Products for Clone", False, "No products found to clone")
+                return
+                
+            # Use first product for cloning
+            source_product = products[0]
+            product_id = source_product.get("id")
+            source_name = source_product.get("name", "Unknown")
+            
+            self.log_test("Get Products for Clone", True, f"Found {len(products)} products, using '{source_name}' ({product_id})", response_time)
+            
+            # Test 1: Clone existing product
+            start_time = time.time()
+            response = requests.post(
+                f"{self.base_url}/api/admin/products/{product_id}/clone",
+                headers=self.get_auth_headers(),
+                timeout=30
+            )
+            response_time = (time.time() - start_time) * 1000
+            
+            if response.status_code == 201:
+                clone_data = response.json()
+                clone_id = clone_data.get("id")
+                clone_name = clone_data.get("name")
+                clone_slug = clone_data.get("slug")
+                
+                # Verify clone properties
+                checks = []
+                checks.append(("Fresh UUID", clone_id != product_id and len(clone_id) == 36))
+                checks.append(("Name has (Copy)", clone_name and "(Copy)" in clone_name))
+                checks.append(("Slug ends with -copy", clone_slug and clone_slug.endswith("-copy")))
+                checks.append(("Published false", clone_data.get("published") == False))
+                checks.append(("Featured false", clone_data.get("featured") == False))
+                checks.append(("Review count 0", clone_data.get("review_count") == 0))
+                checks.append(("Has created_at", "created_at" in clone_data))
+                
+                all_passed = all(check[1] for check in checks)
+                details = f"Clone created: {clone_name} ({clone_id}). Checks: " + ", ".join([f"{check[0]}: {'✓' if check[1] else '✗'}" for check in checks])
+                self.log_test("Clone Product - First Clone", all_passed, details, response_time)
+                
+                # Test 2: Clone again to test auto-increment slug
                 start_time = time.time()
-                response = self.session.get(f"{BASE_URL}/auth/me", headers=headers)
-                response_time = time.time() - start_time
+                response2 = requests.post(
+                    f"{self.base_url}/api/admin/products/{product_id}/clone",
+                    headers=self.get_auth_headers(),
+                    timeout=30
+                )
+                response_time2 = (time.time() - start_time) * 1000
                 
-                if response.status_code == 200:
-                    data = response.json()
-                    if data.get("email") == ADMIN_EMAIL:
-                        self.log_test("Admin Profile Retrieval", True, 
-                                    f"Profile retrieved for {data.get('email')}", response_time)
-                    else:
-                        self.log_test("Admin Profile Retrieval", False, 
-                                    f"Wrong user profile: {data}", response_time)
+                if response2.status_code == 201:
+                    clone2_data = response2.json()
+                    clone2_slug = clone2_data.get("slug")
+                    slug_incremented = clone2_slug and ("-copy-2" in clone2_slug)
+                    self.log_test("Clone Product - Second Clone", slug_incremented, f"Second clone slug: {clone2_slug}", response_time2)
                 else:
-                    self.log_test("Admin Profile Retrieval", False, 
-                                f"Status {response.status_code}: {response.text}", response_time)
-            except Exception as e:
-                self.log_test("Admin Profile Retrieval", False, f"Exception: {str(e)}")
-                
-    def test_openapi_spec(self):
-        """Test OpenAPI specification endpoint"""
-        try:
-            start_time = time.time()
-            response = self.session.get(f"{BASE_URL.replace('/api', '')}/openapi.json")
-            response_time = time.time() - start_time
-            
-            if response.status_code == 200:
-                data = response.json()
-                if "openapi" in data and "paths" in data:
-                    path_count = len(data["paths"])
-                    self.log_test("OpenAPI Specification", True, 
-                                f"OpenAPI spec available with {path_count} endpoints", response_time)
-                else:
-                    self.log_test("OpenAPI Specification", False, 
-                                f"Invalid OpenAPI format: {data}", response_time)
-            else:
-                self.log_test("OpenAPI Specification", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-        except Exception as e:
-            self.log_test("OpenAPI Specification", False, f"Exception: {str(e)}")
-            
-    def test_cors_and_compression(self):
-        """Test CORS headers and GZip compression"""
-        try:
-            start_time = time.time()
-            headers = {
-                "Origin": "https://example.com",
-                "Accept-Encoding": "gzip, deflate"
-            }
-            response = self.session.get(f"{BASE_URL}/", headers=headers)
-            response_time = time.time() - start_time
-            
-            cors_headers_present = (
-                "access-control-allow-origin" in response.headers or
-                "Access-Control-Allow-Origin" in response.headers
-            )
-            
-            gzip_enabled = (
-                response.headers.get("content-encoding") == "gzip" or
-                "gzip" in response.headers.get("content-encoding", "")
-            )
-            
-            if response.status_code == 200:
-                details = []
-                if cors_headers_present:
-                    details.append("CORS headers present")
-                if gzip_enabled:
-                    details.append("GZip compression enabled")
+                    self.log_test("Clone Product - Second Clone", False, f"Status {response2.status_code}: {response2.text}")
                     
-                if cors_headers_present:
-                    self.log_test("CORS & Compression Check", True, 
-                                f"{', '.join(details) if details else 'Basic functionality working'}", response_time)
-                else:
-                    self.log_test("CORS & Compression Check", False, 
-                                f"CORS headers missing", response_time)
             else:
-                self.log_test("CORS & Compression Check", False, 
-                            f"Status {response.status_code}: {response.text}", response_time)
-        except Exception as e:
-            self.log_test("CORS & Compression Check", False, f"Exception: {str(e)}")
+                self.log_test("Clone Product - First Clone", False, f"Status {response.status_code}: {response.text}")
             
-    def test_performance_timing(self):
-        """Test API response times for performance regression"""
+            # Test 3: Clone non-existent product (should return 404)
+            fake_id = str(uuid.uuid4())
+            start_time = time.time()
+            response = requests.post(
+                f"{self.base_url}/api/admin/products/{fake_id}/clone",
+                headers=self.get_auth_headers(),
+                timeout=30
+            )
+            response_time = (time.time() - start_time) * 1000
+            
+            expected_404 = response.status_code == 404
+            self.log_test("Clone Non-existent Product", expected_404, f"Status {response.status_code} (expected 404)", response_time)
+            
+        except Exception as e:
+            self.log_test("Clone Product Endpoint", False, f"Exception: {str(e)}")
+    
+    def test_admin_review_create_endpoint(self):
+        """Test POST /api/admin/reviews"""
+        print("\n=== Testing Admin Review Create Endpoint ===")
+        
+        try:
+            # Test 1: Create valid review
+            review_data = {
+                "product_id": "men-restroom-sign",
+                "author": "Backend Regression Tester",
+                "rating": 5,
+                "title": "Love it",
+                "content": "Great product",
+                "status": "approved",
+                "featured": True,
+                "verified": True
+            }
+            
+            start_time = time.time()
+            response = requests.post(
+                f"{self.base_url}/api/admin/reviews",
+                headers=self.get_auth_headers(),
+                json=review_data,
+                timeout=30
+            )
+            response_time = (time.time() - start_time) * 1000
+            
+            if response.status_code == 201:
+                review_response = response.json()
+                review_id = review_response.get("id")
+                
+                # Verify review properties
+                checks = []
+                checks.append(("Generated UUID", review_id and len(review_id) == 36))
+                checks.append(("Status approved", review_response.get("status") == "approved"))
+                checks.append(("Featured true", review_response.get("featured") == True))
+                checks.append(("Verified true", review_response.get("verified") == True))
+                checks.append(("Helpful 0", review_response.get("helpful") == 0))
+                checks.append(("Has timestamps", "created_at" in review_response))
+                
+                all_passed = all(check[1] for check in checks)
+                details = f"Review created: {review_id}. Checks: " + ", ".join([f"{check[0]}: {'✓' if check[1] else '✗'}" for check in checks])
+                self.log_test("Create Admin Review - Valid", all_passed, details, response_time)
+                
+                # Verify review appears in admin list
+                start_time = time.time()
+                list_response = requests.get(
+                    f"{self.base_url}/api/admin/reviews",
+                    headers=self.get_auth_headers(),
+                    timeout=30
+                )
+                list_response_time = (time.time() - start_time) * 1000
+                
+                if list_response.status_code == 200:
+                    reviews_list = list_response.json().get("reviews", [])
+                    review_found = any(r.get("id") == review_id for r in reviews_list)
+                    self.log_test("Verify Review in List", review_found, f"Found {len(reviews_list)} reviews, new review {'found' if review_found else 'not found'}", list_response_time)
+                else:
+                    self.log_test("Verify Review in List", False, f"Status {list_response.status_code}: {list_response.text}")
+                    
+            else:
+                self.log_test("Create Admin Review - Valid", False, f"Status {response.status_code}: {response.text}")
+            
+            # Test 2: Rating clamping (rating=0 should clamp to 1)
+            clamp_data = {
+                "product_id": "men-restroom-sign",
+                "author": "Clamp Tester",
+                "rating": 0,
+                "content": "Testing rating clamp"
+            }
+            
+            start_time = time.time()
+            response = requests.post(
+                f"{self.base_url}/api/admin/reviews",
+                headers=self.get_auth_headers(),
+                json=clamp_data,
+                timeout=30
+            )
+            response_time = (time.time() - start_time) * 1000
+            
+            if response.status_code == 201:
+                clamped_rating = response.json().get("rating")
+                rating_clamped = clamped_rating == 1
+                self.log_test("Rating Clamp Low", rating_clamped, f"Rating 0 clamped to {clamped_rating}", response_time)
+            else:
+                self.log_test("Rating Clamp Low", False, f"Status {response.status_code}: {response.text}")
+            
+            # Test 3: Rating clamping (rating=99 should clamp to 5)
+            clamp_data["rating"] = 99
+            clamp_data["author"] = "High Clamp Tester"
+            
+            start_time = time.time()
+            response = requests.post(
+                f"{self.base_url}/api/admin/reviews",
+                headers=self.get_auth_headers(),
+                json=clamp_data,
+                timeout=30
+            )
+            response_time = (time.time() - start_time) * 1000
+            
+            if response.status_code == 201:
+                clamped_rating = response.json().get("rating")
+                rating_clamped = clamped_rating == 5
+                self.log_test("Rating Clamp High", rating_clamped, f"Rating 99 clamped to {clamped_rating}", response_time)
+            else:
+                self.log_test("Rating Clamp High", False, f"Status {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Admin Review Create Endpoint", False, f"Exception: {str(e)}")
+    
+    def test_content_delete_endpoint(self):
+        """Test DELETE /api/admin/content/{section_id}"""
+        print("\n=== Testing Content Delete Endpoint ===")
+        
+        try:
+            # First create a test section
+            test_section_id = "test-delete-section"
+            create_data = {
+                "section_id": test_section_id,
+                "content": "<p>Test content for deletion</p>",
+                "font_size": "16px",
+                "font_family": "Inter",
+                "plain_text": "Test content for deletion"
+            }
+            
+            start_time = time.time()
+            response = requests.put(
+                f"{self.base_url}/api/admin/content/{test_section_id}",
+                headers=self.get_auth_headers(),
+                json=create_data,
+                timeout=30
+            )
+            create_time = (time.time() - start_time) * 1000
+            
+            if response.status_code == 200:
+                self.log_test("Create Test Section", True, f"Section '{test_section_id}' created", create_time)
+                
+                # Now delete the section
+                start_time = time.time()
+                delete_response = requests.delete(
+                    f"{self.base_url}/api/admin/content/{test_section_id}",
+                    headers=self.get_auth_headers(),
+                    timeout=30
+                )
+                delete_time = (time.time() - start_time) * 1000
+                
+                if delete_response.status_code == 200:
+                    delete_data = delete_response.json()
+                    success_status = delete_data.get("status") == "success"
+                    correct_section_id = delete_data.get("section_id") == test_section_id
+                    
+                    all_passed = success_status and correct_section_id
+                    details = f"Status: {delete_data.get('status')}, Section ID: {delete_data.get('section_id')}"
+                    self.log_test("Delete Content Section", all_passed, details, delete_time)
+                else:
+                    self.log_test("Delete Content Section", False, f"Status {delete_response.status_code}: {delete_response.text}")
+                    
+            else:
+                self.log_test("Create Test Section", False, f"Status {response.status_code}: {response.text}")
+                return
+            
+            # Test deleting non-existent section (should return 404)
+            fake_section_id = "non-existent-section-" + str(uuid.uuid4())[:8]
+            start_time = time.time()
+            response = requests.delete(
+                f"{self.base_url}/api/admin/content/{fake_section_id}",
+                headers=self.get_auth_headers(),
+                timeout=30
+            )
+            response_time = (time.time() - start_time) * 1000
+            
+            expected_404 = response.status_code == 404
+            self.log_test("Delete Non-existent Section", expected_404, f"Status {response.status_code} (expected 404)", response_time)
+            
+        except Exception as e:
+            self.log_test("Content Delete Endpoint", False, f"Exception: {str(e)}")
+    
+    def test_media_rename_endpoint(self):
+        """Test PUT /api/admin/media/{file_id}"""
+        print("\n=== Testing Media Rename Endpoint ===")
+        
+        try:
+            # First get existing media files or upload a test file
+            start_time = time.time()
+            response = requests.get(
+                f"{self.base_url}/api/admin/media",
+                headers=self.get_auth_headers(),
+                timeout=30
+            )
+            list_time = (time.time() - start_time) * 1000
+            
+            file_id = None
+            original_filename = None
+            
+            if response.status_code == 200:
+                files = response.json().get("files", [])
+                if files:
+                    file_id = files[0].get("id")
+                    original_filename = files[0].get("filename")
+                    self.log_test("Get Media Files", True, f"Found {len(files)} files, using {original_filename} ({file_id})", list_time)
+                else:
+                    # Upload a test file if no files exist
+                    test_image = self.create_test_image()
+                    files = {"file": ("test.png", test_image, "image/png")}
+                    
+                    start_time = time.time()
+                    upload_response = requests.post(
+                        f"{self.base_url}/api/admin/media/upload",
+                        headers=self.get_auth_headers(),
+                        files=files,
+                        timeout=30
+                    )
+                    upload_time = (time.time() - start_time) * 1000
+                    
+                    if upload_response.status_code == 200:
+                        upload_data = upload_response.json()
+                        file_id = upload_data.get("id")
+                        original_filename = upload_data.get("filename")
+                        self.log_test("Upload Test File", True, f"Uploaded {original_filename} ({file_id})", upload_time)
+                    else:
+                        self.log_test("Upload Test File", False, f"Status {upload_response.status_code}: {upload_response.text}")
+                        return
+            else:
+                self.log_test("Get Media Files", False, f"Status {response.status_code}: {response.text}")
+                return
+            
+            if not file_id:
+                self.log_test("Media Rename Test", False, "No file available for testing")
+                return
+            
+            # Test 1: Rename file
+            new_filename = "renamed-by-test.png"
+            rename_data = {"filename": new_filename}
+            
+            start_time = time.time()
+            response = requests.put(
+                f"{self.base_url}/api/admin/media/{file_id}",
+                headers=self.get_auth_headers(),
+                json=rename_data,
+                timeout=30
+            )
+            rename_time = (time.time() - start_time) * 1000
+            
+            if response.status_code == 200:
+                rename_response = response.json()
+                file_data = rename_response.get("file", {})
+                renamed_filename = file_data.get("filename")
+                
+                rename_success = renamed_filename == new_filename
+                self.log_test("Rename Media File", rename_success, f"Renamed to: {renamed_filename}", rename_time)
+                
+                # Verify via GET that filename changed
+                start_time = time.time()
+                verify_response = requests.get(
+                    f"{self.base_url}/api/admin/media",
+                    headers=self.get_auth_headers(),
+                    timeout=30
+                )
+                verify_time = (time.time() - start_time) * 1000
+                
+                if verify_response.status_code == 200:
+                    files = verify_response.json().get("files", [])
+                    target_file = next((f for f in files if f.get("id") == file_id), None)
+                    if target_file:
+                        verified_name = target_file.get("filename")
+                        verify_success = verified_name == new_filename
+                        self.log_test("Verify Rename", verify_success, f"Verified filename: {verified_name}", verify_time)
+                    else:
+                        self.log_test("Verify Rename", False, "File not found in list")
+                else:
+                    self.log_test("Verify Rename", False, f"Status {verify_response.status_code}: {verify_response.text}")
+                    
+            else:
+                self.log_test("Rename Media File", False, f"Status {response.status_code}: {response.text}")
+            
+            # Test 2: Rename with path separators (should be sanitized)
+            evil_filename = "../evil.png"
+            sanitize_data = {"filename": evil_filename}
+            
+            start_time = time.time()
+            response = requests.put(
+                f"{self.base_url}/api/admin/media/{file_id}",
+                headers=self.get_auth_headers(),
+                json=sanitize_data,
+                timeout=30
+            )
+            sanitize_time = (time.time() - start_time) * 1000
+            
+            if response.status_code == 200:
+                sanitize_response = response.json()
+                file_data = sanitize_response.get("file", {})
+                sanitized_filename = file_data.get("filename")
+                
+                # Should not contain path separators
+                is_sanitized = "/" not in sanitized_filename and "\\" not in sanitized_filename
+                self.log_test("Sanitize Filename", is_sanitized, f"'{evil_filename}' sanitized to '{sanitized_filename}'", sanitize_time)
+            else:
+                self.log_test("Sanitize Filename", False, f"Status {response.status_code}: {response.text}")
+            
+            # Test 3: Rename unknown file (should return 404)
+            fake_id = str(uuid.uuid4())
+            start_time = time.time()
+            response = requests.put(
+                f"{self.base_url}/api/admin/media/{fake_id}",
+                headers=self.get_auth_headers(),
+                json={"filename": "test.png"},
+                timeout=30
+            )
+            response_time = (time.time() - start_time) * 1000
+            
+            expected_404 = response.status_code == 404
+            self.log_test("Rename Unknown File", expected_404, f"Status {response.status_code} (expected 404)", response_time)
+            
+            # Test 4: Empty filename (should return 400)
+            start_time = time.time()
+            response = requests.put(
+                f"{self.base_url}/api/admin/media/{file_id}",
+                headers=self.get_auth_headers(),
+                json={"filename": ""},
+                timeout=30
+            )
+            response_time = (time.time() - start_time) * 1000
+            
+            expected_400 = response.status_code == 400
+            self.log_test("Empty Filename", expected_400, f"Status {response.status_code} (expected 400)", response_time)
+            
+        except Exception as e:
+            self.log_test("Media Rename Endpoint", False, f"Exception: {str(e)}")
+    
+    def test_media_replace_endpoint(self):
+        """Test POST /api/admin/media/{file_id}/replace"""
+        print("\n=== Testing Media Replace Endpoint ===")
+        
+        try:
+            # Get or create a file to replace
+            start_time = time.time()
+            response = requests.get(
+                f"{self.base_url}/api/admin/media",
+                headers=self.get_auth_headers(),
+                timeout=30
+            )
+            list_time = (time.time() - start_time) * 1000
+            
+            file_id = None
+            original_size = None
+            
+            if response.status_code == 200:
+                files = response.json().get("files", [])
+                if files:
+                    file_id = files[0].get("id")
+                    original_size = files[0].get("size")
+                    self.log_test("Get File for Replace", True, f"Using file {file_id} (size: {original_size})", list_time)
+                else:
+                    # Upload a test file
+                    test_image = self.create_test_image()
+                    files_data = {"file": ("original.png", test_image, "image/png")}
+                    
+                    start_time = time.time()
+                    upload_response = requests.post(
+                        f"{self.base_url}/api/admin/media/upload",
+                        headers=self.get_auth_headers(),
+                        files=files_data,
+                        timeout=30
+                    )
+                    upload_time = (time.time() - start_time) * 1000
+                    
+                    if upload_response.status_code == 200:
+                        upload_data = upload_response.json()
+                        file_id = upload_data.get("id")
+                        original_size = upload_data.get("size")
+                        self.log_test("Upload File for Replace", True, f"Uploaded {file_id} (size: {original_size})", upload_time)
+                    else:
+                        self.log_test("Upload File for Replace", False, f"Status {upload_response.status_code}: {upload_response.text}")
+                        return
+            else:
+                self.log_test("Get File for Replace", False, f"Status {response.status_code}: {response.text}")
+                return
+            
+            if not file_id:
+                self.log_test("Media Replace Test", False, "No file available for testing")
+                return
+            
+            # Test 1: Replace with new image
+            new_image = self.create_test_image(size=(100, 100))  # Different size
+            files_data = {"file": ("replacement.png", new_image, "image/png")}
+            
+            start_time = time.time()
+            response = requests.post(
+                f"{self.base_url}/api/admin/media/{file_id}/replace",
+                headers=self.get_auth_headers(),
+                files=files_data,
+                timeout=30
+            )
+            replace_time = (time.time() - start_time) * 1000
+            
+            if response.status_code == 200:
+                replace_data = response.json()
+                new_size = replace_data.get("size")
+                same_id = replace_data.get("id") == file_id
+                has_updated_at = "updated_at" in replace_data
+                url_correct = replace_data.get("url", "").endswith(f"/api/media/{file_id}")
+                
+                checks = []
+                checks.append(("Same ID", same_id))
+                checks.append(("New size", new_size != original_size))
+                checks.append(("Updated timestamp", has_updated_at))
+                checks.append(("Correct URL", url_correct))
+                
+                all_passed = all(check[1] for check in checks)
+                details = f"Size: {original_size} → {new_size}. Checks: " + ", ".join([f"{check[0]}: {'✓' if check[1] else '✗'}" for check in checks])
+                self.log_test("Replace Media File", all_passed, details, replace_time)
+                
+                # Verify the file serves new content
+                start_time = time.time()
+                serve_response = requests.get(
+                    f"{self.base_url}/api/media/{file_id}",
+                    timeout=30
+                )
+                serve_time = (time.time() - start_time) * 1000
+                
+                if serve_response.status_code == 200:
+                    served_size = len(serve_response.content)
+                    size_matches = served_size == new_size
+                    self.log_test("Verify Replaced Content", size_matches, f"Served size: {served_size}, expected: {new_size}", serve_time)
+                else:
+                    self.log_test("Verify Replaced Content", False, f"Status {serve_response.status_code}: {serve_response.text}")
+                    
+            else:
+                self.log_test("Replace Media File", False, f"Status {response.status_code}: {response.text}")
+            
+            # Test 2: Replace unknown file (should return 404)
+            fake_id = str(uuid.uuid4())
+            files_data = {"file": ("test.png", self.create_test_image(), "image/png")}
+            
+            start_time = time.time()
+            response = requests.post(
+                f"{self.base_url}/api/admin/media/{fake_id}/replace",
+                headers=self.get_auth_headers(),
+                files=files_data,
+                timeout=30
+            )
+            response_time = (time.time() - start_time) * 1000
+            
+            expected_404 = response.status_code == 404
+            self.log_test("Replace Unknown File", expected_404, f"Status {response.status_code} (expected 404)", response_time)
+            
+            # Test 3: Replace with non-image (should return 400)
+            text_file = io.BytesIO(b"This is not an image")
+            files_data = {"file": ("test.txt", text_file, "text/plain")}
+            
+            start_time = time.time()
+            response = requests.post(
+                f"{self.base_url}/api/admin/media/{file_id}/replace",
+                headers=self.get_auth_headers(),
+                files=files_data,
+                timeout=30
+            )
+            response_time = (time.time() - start_time) * 1000
+            
+            expected_400 = response.status_code == 400
+            self.log_test("Replace with Non-image", expected_400, f"Status {response.status_code} (expected 400)", response_time)
+            
+            # Test 4: Replace with huge file (should return 413)
+            # Create a file larger than 10MB
+            huge_data = b"x" * (11 * 1024 * 1024)  # 11MB
+            files_data = {"file": ("huge.png", io.BytesIO(huge_data), "image/png")}
+            
+            start_time = time.time()
+            response = requests.post(
+                f"{self.base_url}/api/admin/media/{file_id}/replace",
+                headers=self.get_auth_headers(),
+                files=files_data,
+                timeout=30
+            )
+            response_time = (time.time() - start_time) * 1000
+            
+            expected_413 = response.status_code == 413
+            self.log_test("Replace with Huge File", expected_413, f"Status {response.status_code} (expected 413)", response_time)
+            
+        except Exception as e:
+            self.log_test("Media Replace Endpoint", False, f"Exception: {str(e)}")
+    
+    def create_test_image(self, size=(50, 50)) -> io.BytesIO:
+        """Create a minimal PNG image for testing"""
+        if size == (50, 50):
+            # Create a minimal 1x1 PNG (84 bytes)
+            png_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\tpHYs\x00\x00\x0b\x13\x00\x00\x0b\x13\x01\x00\x9a\x9c\x18\x00\x00\x00\nIDATx\x9cc\xf8\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00IEND\xaeB`\x82'
+        else:
+            # Create a larger PNG with different content (different size)
+            png_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x02\x00\x00\x00\x02\x08\x02\x00\x00\x00\xfd\xd4\x9a\xf8\x00\x00\x00\tpHYs\x00\x00\x0b\x13\x00\x00\x0b\x13\x01\x00\x9a\x9c\x18\x00\x00\x00\x12IDATx\x9cc\xf8\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00IEND\xaeB`\x82'
+        return io.BytesIO(png_data)
+    
+    def test_regression_endpoints(self):
+        """Test existing endpoints to ensure no regressions"""
+        print("\n=== Testing Regression Endpoints ===")
+        
+        # Test admin login (already done, but verify token works)
+        if not self.admin_token:
+            self.log_test("Admin Token Available", False, "No admin token for regression tests")
+            return
+        
+        # Test existing admin endpoints
         endpoints_to_test = [
-            ("GET", f"{BASE_URL}/", "Health Check"),
-            ("GET", f"{BASE_URL}/health", "Database Health"),
-            ("GET", f"{BASE_URL}/status", "Status List"),
-            ("GET", f"{BASE_URL}/content", "Content List")
+            ("GET", "/api/admin/products", "Admin Products List"),
+            ("GET", "/api/admin/reviews", "Admin Reviews List"),
+            ("GET", "/api/admin/content", "Admin Content List"),
+            ("GET", "/api/admin/media", "Admin Media List"),
         ]
         
-        total_time = 0
-        successful_tests = 0
-        
-        for method, url, name in endpoints_to_test:
+        for method, endpoint, name in endpoints_to_test:
             try:
                 start_time = time.time()
-                if method == "GET":
-                    response = self.session.get(url)
-                response_time = time.time() - start_time
-                total_time += response_time
+                response = requests.request(
+                    method,
+                    f"{self.base_url}{endpoint}",
+                    headers=self.get_auth_headers(),
+                    timeout=30
+                )
+                response_time = (time.time() - start_time) * 1000
                 
-                if response.status_code == 200:
-                    successful_tests += 1
-                    if response_time > 0.5:  # 500ms threshold
-                        self.log_test(f"Performance - {name}", False, 
-                                    f"Slow response: {response_time*1000:.2f}ms > 500ms", response_time)
-                    else:
-                        self.log_test(f"Performance - {name}", True, 
-                                    f"Fast response: {response_time*1000:.2f}ms", response_time)
-                else:
-                    self.log_test(f"Performance - {name}", False, 
-                                f"Failed request: {response.status_code}", response_time)
+                success = response.status_code == 200
+                details = f"Status {response.status_code}"
+                if success:
+                    data = response.json()
+                    if "products" in data:
+                        details += f", {len(data['products'])} products"
+                    elif "reviews" in data:
+                        details += f", {len(data['reviews'])} reviews"
+                    elif "sections" in data:
+                        details += f", {len(data['sections'])} sections"
+                    elif "files" in data:
+                        details += f", {len(data['files'])} files"
+                
+                self.log_test(name, success, details, response_time)
+                
             except Exception as e:
-                self.log_test(f"Performance - {name}", False, f"Exception: {str(e)}")
+                self.log_test(name, False, f"Exception: {str(e)}")
+        
+        # Test public endpoints
+        public_endpoints = [
+            ("GET", "/api/", "API Health Check"),
+            ("GET", "/api/products", "Public Products"),
+            ("GET", "/api/reviews/men-restroom-sign", "Public Reviews"),
+        ]
+        
+        for method, endpoint, name in public_endpoints:
+            try:
+                start_time = time.time()
+                response = requests.request(
+                    method,
+                    f"{self.base_url}{endpoint}",
+                    timeout=30
+                )
+                response_time = (time.time() - start_time) * 1000
                 
-        if successful_tests > 0:
-            avg_time = total_time / successful_tests
-            self.log_test("Overall Performance", True, 
-                        f"Average response time: {avg_time*1000:.2f}ms across {successful_tests} endpoints")
-                        
+                success = response.status_code == 200
+                details = f"Status {response.status_code}"
+                if success and endpoint == "/api/":
+                    data = response.json()
+                    details += f", message: {data.get('message', 'N/A')}"
+                
+                self.log_test(name, success, details, response_time)
+                
+            except Exception as e:
+                self.log_test(name, False, f"Exception: {str(e)}")
+    
     def run_all_tests(self):
-        """Run the complete test suite"""
-        print("🚀 Starting BSign Backend Regression Testing Suite")
-        print("=" * 60)
-        print(f"Backend URL: {BASE_URL}")
-        print(f"Test Time: {datetime.now().isoformat()}")
-        print("=" * 60)
+        """Run all tests and generate summary"""
+        print("🚀 Starting BSign Store Admin Endpoints Testing")
+        print(f"Backend URL: {self.base_url}")
+        print(f"Admin Email: {ADMIN_EMAIL}")
         
-        # Core API Tests
-        print("\n📋 CORE API TESTS")
-        self.test_health_check()
-        self.test_database_health()
-        self.test_status_endpoints()
+        # Login first
+        if not self.admin_login():
+            print("❌ Cannot proceed without admin authentication")
+            return
         
-        # Content Management Tests
-        print("\n📝 CONTENT MANAGEMENT TESTS")
-        self.test_content_endpoints()
+        # Run all endpoint tests
+        self.test_product_clone_endpoint()
+        self.test_admin_review_create_endpoint()
+        self.test_content_delete_endpoint()
+        self.test_media_rename_endpoint()
+        self.test_media_replace_endpoint()
+        self.test_regression_endpoints()
         
-        # Communication Tests
-        print("\n📧 COMMUNICATION TESTS")
-        self.test_contact_form()
-        self.test_order_notification()
-        self.test_newsletter_subscription()
+        # Generate summary
+        self.generate_summary()
+    
+    def generate_summary(self):
+        """Generate test summary"""
+        print("\n" + "="*80)
+        print("🎯 TEST SUMMARY")
+        print("="*80)
         
-        # Review System Tests
-        print("\n⭐ REVIEW SYSTEM TESTS")
-        self.test_review_system()
+        total_tests = len(self.test_results)
+        passed_tests = sum(1 for result in self.test_results if result["success"])
+        failed_tests = total_tests - passed_tests
+        success_rate = (passed_tests / total_tests * 100) if total_tests > 0 else 0
         
-        # Authentication Tests
-        print("\n🔐 AUTHENTICATION TESTS")
-        self.test_auth_endpoints()
+        print(f"Total Tests: {total_tests}")
+        print(f"Passed: {passed_tests}")
+        print(f"Failed: {failed_tests}")
+        print(f"Success Rate: {success_rate:.1f}%")
         
-        # Infrastructure Tests
-        print("\n🔧 INFRASTRUCTURE TESTS")
-        self.test_openapi_spec()
-        self.test_cors_and_compression()
+        if self.response_times:
+            avg_response_time = sum(self.response_times) / len(self.response_times)
+            median_response_time = sorted(self.response_times)[len(self.response_times) // 2]
+            print(f"Average Response Time: {avg_response_time:.2f}ms")
+            print(f"Median Response Time: {median_response_time:.2f}ms")
         
-        # Performance Tests
-        print("\n⚡ PERFORMANCE TESTS")
-        self.test_performance_timing()
+        # Show failed tests
+        failed_results = [r for r in self.test_results if not r["success"]]
+        if failed_results:
+            print(f"\n❌ FAILED TESTS ({len(failed_results)}):")
+            for result in failed_results:
+                print(f"  • {result['test']}: {result['details']}")
         
-        # Summary
-        print("\n" + "=" * 60)
-        print("📊 TEST SUMMARY")
-        print("=" * 60)
-        print(f"Total Tests: {self.total_tests}")
-        print(f"Passed: {self.passed_tests}")
-        print(f"Failed: {self.total_tests - self.passed_tests}")
-        print(f"Success Rate: {(self.passed_tests/self.total_tests*100):.1f}%")
+        # Show new endpoint results specifically
+        new_endpoint_tests = [r for r in self.test_results if any(keyword in r["test"] for keyword in ["Clone", "Admin Review", "Content Delete", "Media Rename", "Media Replace"])]
+        new_passed = sum(1 for r in new_endpoint_tests if r["success"])
+        new_total = len(new_endpoint_tests)
         
-        if self.total_tests - self.passed_tests > 0:
-            print("\n❌ FAILED TESTS:")
-            for result in self.test_results:
-                if not result["passed"]:
-                    print(f"  - {result['test']}: {result['details']}")
-                    
-        print("\n✅ PASSED TESTS:")
-        for result in self.test_results:
-            if result["passed"]:
-                print(f"  - {result['test']}: {result['details']}")
-                
-        return self.passed_tests == self.total_tests
+        print(f"\n🆕 NEW ADMIN ENDPOINTS: {new_passed}/{new_total} tests passed")
+        
+        # Show regression test results
+        regression_tests = [r for r in self.test_results if any(keyword in r["test"] for keyword in ["Admin Products List", "Admin Reviews List", "Admin Content List", "Admin Media List", "API Health Check", "Public Products", "Public Reviews"])]
+        regression_passed = sum(1 for r in regression_tests if r["success"])
+        regression_total = len(regression_tests)
+        
+        print(f"🔄 REGRESSION TESTS: {regression_passed}/{regression_total} tests passed")
+        
+        print("\n" + "="*80)
 
 if __name__ == "__main__":
-    tester = BackendTester()
-    success = tester.run_all_tests()
-    
-    if success:
-        print("\n🎉 ALL TESTS PASSED - No regressions detected!")
-    else:
-        print(f"\n⚠️  {tester.total_tests - tester.passed_tests} test(s) failed - Investigation needed")
+    tester = BSignTester()
+    tester.run_all_tests()

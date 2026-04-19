@@ -12,9 +12,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Lock, Settings, FileText, Home, Star, Trash2, Edit2, X, Check,
+  Lock, Settings, FileText, Home, Star, Trash2, Edit2, X, Check, Plus,
   Package, LogOut, BarChart3, Image as ImageIcon, Percent, CheckCircle2, EyeOff,
 } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import SEO from '@/components/SEO';
 import { useAuth } from '@/contexts/AuthContext';
@@ -86,6 +90,20 @@ const AdminPanel = () => {
   const [editForm, setEditForm] = useState({ title: '', content: '', rating: 0, author: '' });
   const [stats, setStats] = useState<any>(null);
 
+  // Manual-review creation (admin can add testimonials on behalf of customers)
+  const [createReviewOpen, setCreateReviewOpen] = useState(false);
+  const EMPTY_NEW_REVIEW = {
+    product_id: '',
+    author: '',
+    rating: 5,
+    title: '',
+    content: '',
+    status: 'approved' as 'approved' | 'pending' | 'hidden',
+    featured: false,
+    verified: true,
+  };
+  const [newReview, setNewReview] = useState(EMPTY_NEW_REVIEW);
+
   // Filter reviews based on the currently-selected status tab.
   // Legacy reviews without an explicit status are treated as 'approved'.
   const filteredReviews = useMemo(() => {
@@ -123,19 +141,97 @@ const AdminPanel = () => {
     try {
       const data = await apiFetch<{ sections: any[] }>(API_ENDPOINTS.admin.content, { auth: true });
       const saved = data.sections || [];
-      const merged = DEFAULT_SECTIONS.map((def) => {
+
+      // Start with all curated defaults, overlaid with any DB content…
+      const merged: ContentSection[] = DEFAULT_SECTIONS.map((def) => {
         const found = saved.find((s) => s.section_id === def.id);
         if (!found) return def;
         return {
           ...def,
+          name: found.name || def.name,
           content: found.content || def.content,
           fontSize: found.font_size || def.fontSize,
           fontFamily: found.font_family || def.fontFamily,
         };
       });
+
+      // …then append any DB-only sections the admin added dynamically.
+      const defaultIds = new Set(DEFAULT_SECTIONS.map((d) => d.id));
+      for (const s of saved) {
+        if (!defaultIds.has(s.section_id)) {
+          merged.push({
+            id: s.section_id,
+            name: s.name || s.section_id,
+            content: s.content || '',
+            fontSize: s.font_size || '16px',
+            fontFamily: s.font_family || 'Inter',
+          });
+        }
+      }
+
       setSections(merged);
     } catch (e: any) {
       toast.error('Failed to load content: ' + e.message);
+    }
+  };
+
+  // Add a brand-new, fully-dynamic content section (WordPress-style).
+  const addContentSection = async () => {
+    const name = window.prompt(
+      'Name your new section (e.g. "Summer Promo Banner"):'
+    )?.trim();
+    if (!name) return;
+    // Derive a safe slug-like ID from the name
+    const baseId = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40) || `section-${Date.now()}`;
+    // Ensure uniqueness
+    let id = baseId;
+    let i = 2;
+    while (sections.some((s) => s.id === id)) {
+      id = `${baseId}-${i++}`;
+    }
+
+    try {
+      await apiFetch(API_ENDPOINTS.admin.contentById(id), {
+        method: 'PUT',
+        auth: true,
+        json: {
+          name,
+          content: '',
+          font_size: '16px',
+          font_family: 'Inter',
+        },
+      });
+      setSections((prev) => [
+        ...prev,
+        { id, name, content: '', fontSize: '16px', fontFamily: 'Inter' },
+      ]);
+      toast.success(`Section "${name}" created`);
+    } catch (e: any) {
+      toast.error('Create failed: ' + e.message);
+    }
+  };
+
+  // Delete a section entirely. Defaults can also be deleted (they'll reappear
+  // on next reload because the code above seeds them), so we warn only for custom.
+  const deleteContentSection = async (section: ContentSection) => {
+    const isDefault = DEFAULT_SECTIONS.some((d) => d.id === section.id);
+    const msg = isDefault
+      ? `Delete "${section.name}"? This is a built-in section — it will reappear empty on next reload.`
+      : `Delete "${section.name}"? This is permanent.`;
+    if (!window.confirm(msg)) return;
+    try {
+      await apiFetch(API_ENDPOINTS.admin.contentById(section.id), {
+        method: 'DELETE',
+        auth: true,
+      });
+      setSections((prev) => prev.filter((s) => s.id !== section.id));
+      toast.success('Section deleted');
+    } catch (e: any) {
+      toast.error('Delete failed: ' + e.message);
     }
   };
 
@@ -252,6 +348,27 @@ const AdminPanel = () => {
     }
   };
 
+  // Admin manually adds a review (e.g. transcribing a printed testimonial).
+  const submitNewReview = async () => {
+    if (!newReview.product_id.trim() || !newReview.content.trim() || !newReview.author.trim()) {
+      toast.error('Product ID, author, and content are required');
+      return;
+    }
+    try {
+      const created: any = await apiFetch(API_ENDPOINTS.admin.reviews, {
+        method: 'POST',
+        auth: true,
+        json: newReview,
+      });
+      setReviews((prev) => [created, ...prev]);
+      toast.success('Review added');
+      setCreateReviewOpen(false);
+      setNewReview(EMPTY_NEW_REVIEW);
+    } catch (e: any) {
+      toast.error('Add failed: ' + e.message);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -336,24 +453,46 @@ const AdminPanel = () => {
             <TabsContent value="content" className="space-y-6 mt-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Content Management</CardTitle>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Content Management</span>
+                    <Button size="sm" onClick={addContentSection} data-testid="add-section-btn">
+                      <Plus className="h-4 w-4 mr-1" /> New Section
+                    </Button>
+                  </CardTitle>
                   <CardDescription>
-                    Edit text content across your website. Changes save to the database and sync everywhere.
+                    Edit any text across your site. Changes save to the database and sync everywhere.
+                    Create custom sections (banners, promos, legal pages…) and delete ones you don't need.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-8">
                     {sections.map((section) => (
-                      <SimpleWYSIWYGEditor
-                        key={section.id}
-                        sectionId={section.id}
-                        sectionName={section.name}
-                        initialContent={section.content}
-                        initialFontSize={section.fontSize}
-                        initialFontFamily={section.fontFamily}
-                        onSave={(data) => handleSaveSection(section.id, data)}
-                      />
+                      <div key={section.id} className="relative group">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => deleteContentSection(section)}
+                          className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700 hover:bg-red-50"
+                          data-testid={`delete-section-${section.id}`}
+                          title={`Delete "${section.name}"`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <SimpleWYSIWYGEditor
+                          sectionId={section.id}
+                          sectionName={section.name}
+                          initialContent={section.content}
+                          initialFontSize={section.fontSize}
+                          initialFontFamily={section.fontFamily}
+                          onSave={(data) => handleSaveSection(section.id, data)}
+                        />
+                      </div>
                     ))}
+                    {sections.length === 0 && (
+                      <p className="text-center text-muted-foreground py-8">
+                        No sections yet. Click <strong>+ New Section</strong> to create your first one.
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -375,9 +514,18 @@ const AdminPanel = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>Customer Reviews</span>
-                    <span className="text-sm font-normal text-muted-foreground">
-                      {filteredReviews.length} / {reviews.length}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-normal text-muted-foreground">
+                        {filteredReviews.length} / {reviews.length}
+                      </span>
+                      <Button
+                        size="sm"
+                        onClick={() => setCreateReviewOpen(true)}
+                        data-testid="add-review-btn"
+                      >
+                        <Plus className="h-4 w-4 mr-1" /> Add Review
+                      </Button>
+                    </div>
                   </CardTitle>
                   <CardDescription>
                     Approve new reviews before they appear on the site. Hide inappropriate ones. Feature the best on the homepage.
@@ -575,6 +723,107 @@ const AdminPanel = () => {
         </main>
         <ImprovedFooter />
       </div>
+
+      {/* Manual review creation dialog */}
+      <Dialog open={createReviewOpen} onOpenChange={setCreateReviewOpen}>
+        <DialogContent className="max-w-lg" data-testid="add-review-dialog">
+          <DialogHeader>
+            <DialogTitle>Add Review Manually</DialogTitle>
+            <DialogDescription>
+              Add a testimonial on behalf of a customer. Admin-created reviews default to
+              Approved so they appear on the site immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <Label htmlFor="nr-product">Product ID (slug) *</Label>
+              <Input
+                id="nr-product"
+                placeholder="e.g. men-restroom-sign"
+                value={newReview.product_id}
+                onChange={(e) => setNewReview((x) => ({ ...x, product_id: e.target.value }))}
+                data-testid="new-review-product"
+              />
+            </div>
+            <div>
+              <Label htmlFor="nr-author">Author *</Label>
+              <Input
+                id="nr-author"
+                placeholder="Customer name"
+                value={newReview.author}
+                onChange={(e) => setNewReview((x) => ({ ...x, author: e.target.value }))}
+                data-testid="new-review-author"
+              />
+            </div>
+            <div>
+              <Label>Rating</Label>
+              <div className="flex gap-1 mt-1">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setNewReview((x) => ({ ...x, rating: s }))}
+                    className="p-1"
+                    data-testid={`new-review-star-${s}`}
+                  >
+                    <Star
+                      className={`h-6 w-6 ${
+                        s <= newReview.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="nr-title">Title</Label>
+              <Input
+                id="nr-title"
+                placeholder="Review headline (optional)"
+                value={newReview.title}
+                onChange={(e) => setNewReview((x) => ({ ...x, title: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="nr-content">Content *</Label>
+              <Textarea
+                id="nr-content"
+                rows={4}
+                placeholder="Review body"
+                value={newReview.content}
+                onChange={(e) => setNewReview((x) => ({ ...x, content: e.target.value }))}
+                data-testid="new-review-content"
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={newReview.featured}
+                  onChange={(e) => setNewReview((x) => ({ ...x, featured: e.target.checked }))}
+                />
+                Feature on homepage
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={newReview.verified}
+                  onChange={(e) => setNewReview((x) => ({ ...x, verified: e.target.checked }))}
+                />
+                Verified buyer
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateReviewOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={submitNewReview} data-testid="submit-new-review">
+              Add Review
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

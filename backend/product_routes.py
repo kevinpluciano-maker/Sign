@@ -153,6 +153,47 @@ async def delete_product(product_id: str):
     return {"status": "success", "message": "Product deleted"}
 
 
+@admin_product_router.post("/{product_id}/clone", status_code=201)
+async def clone_product(product_id: str):
+    """Duplicate an existing product. The clone gets a fresh UUID + unique slug,
+    and is created as UNPUBLISHED so the admin can review it before going live."""
+    db = get_db()
+    src = await db.products.find_one({"id": product_id}, {"_id": 0})
+    if not src:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    now = datetime.now(timezone.utc).isoformat()
+    new_id = str(uuid.uuid4())
+    base_slug = src.get("slug") or _slugify(src.get("name", "product"))
+
+    # Ensure unique slug — append -copy, -copy-2, … until it's free
+    candidate = f"{base_slug}-copy"
+    i = 2
+    while await db.products.find_one({"slug": candidate}, {"_id": 1}):
+        candidate = f"{base_slug}-copy-{i}"
+        i += 1
+
+    clone = {
+        **src,
+        "id": new_id,
+        "name": f"{src.get('name', 'Product')} (Copy)",
+        "slug": candidate,
+        # Clone starts hidden so admin can safely edit before publishing
+        "published": False,
+        "featured": False,
+        # Reset community stats on the clone
+        "rating": src.get("rating", 5.0),
+        "review_count": 0,
+        "created_at": now,
+        "updated_at": now,
+    }
+
+    await db.products.insert_one(clone)
+    # Drop mongo _id for response
+    clone.pop("_id", None)
+    return clone
+
+
 class BulkImportProduct(ProductBase):
     id: Optional[str] = None  # use provided id for idempotency
 
